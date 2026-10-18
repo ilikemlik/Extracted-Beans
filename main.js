@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { gsap } from 'gsap';
 
 /* ==========================================================================
@@ -15,93 +17,93 @@ const defaultZ = 5;
 const zoomedZ = 2;
 
 // Scene Core Variables
-let scene, camera, renderer, model, beanGroup, particles, shadowMesh;
+let scene, camera, renderer, model, beanGroup, groundMesh, shadowMesh;
 let keyLight, fillLight, rimLight, ambientLight;
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
 let targetRotation = { x: 0.2, y: 0 };
 let mouseParallax = { x: 0, y: 0 };
-let currentRoast = 'medium';
+let currentRoast = 'silver';
 let audioEnabled = false;
 let audioCtx = null;
 
-// Roast Profiles Data
+// Material Finishes & Profiles (Centered on Clean Silver Grey)
 const roastProfiles = {
-  light: {
-    title: "Ethiopian Guji Heirloom",
-    tag: "LOT NO. 01 // LIGHT ROAST",
-    altitude: "2,200 MASL",
-    process: "Washed / Sun Dried",
-    varietal: "Indigenous Heirloom",
-    roast: "Agtron #82 Light",
-    notes: ["Lemon Verbena", "Peach Blossom", "Wild Honey", "Bergamot"],
-    density: "Ultra Dense (1.41g/cm³)",
-    temp: "95.0°C // 24s",
-    tds: "1.42% (22.1% EY)",
-    roastPercent: "68%",
-    color: 0x8b4f2c,
-    roughness: 0.45,
-    metalness: 0.02,
-    clearcoat: 0.15,
-    sheenColor: 0xd49b6a,
-    lightColor: 0xffe2b8
-  },
-  medium: {
-    title: "Colombian Geisha Natural",
-    tag: "LOT NO. 04 // SPECIAL RESERVE",
-    altitude: "1,950 MASL",
-    process: "Anaerobic Slow",
-    varietal: "Geisha T2722",
-    roast: "Agtron #64 Medium",
-    notes: ["Bergamot", "Jasmine Bloom", "Honey Melon", "Cacao Nib"],
-    density: "High (SHB 1.34g/cm³)",
-    temp: "93.5°C // 28s",
-    tds: "1.38% (20.5% EY)",
-    roastPercent: "88%",
-    color: 0x442013,
-    roughness: 0.38,
-    metalness: 0.04,
-    clearcoat: 0.25,
-    sheenColor: 0xc68b59,
-    lightColor: 0xffb86c
-  },
-  dark: {
-    title: "Sumatra Mandheling Aged",
-    tag: "LOT NO. 09 // DARK ROAST",
-    altitude: "1,600 MASL",
-    process: "Giling Basah",
-    varietal: "Typica & Catimor",
-    roast: "Agtron #42 Dark",
-    notes: ["Dark Cocoa 90%", "Cedar Wood", "Molasses", "Black Truffle"],
-    density: "Medium (1.28g/cm³)",
-    temp: "91.0°C // 32s",
-    tds: "1.48% (19.8% EY)",
-    roastPercent: "98%",
-    color: 0x1d0f09,
+  silver: {
+    title: "Silver Grey Sculpted Bean",
+    tag: "STUDIO EDITION // SILVER GREY",
+    altitude: "Cast Solid",
+    process: "Precision Satin Polish",
+    varietal: "999 Fine Silver Alloy",
+    roast: "Specular 0.28 Ra",
+    notes: ["Satin Silver", "Clean Specular", "Soft Highlight", "Cool Metallic"],
+    density: "Noble Metal (10.49g/cm³)",
+    temp: "Ambient Studio",
+    tds: "85% Specular Reflectance",
+    roastPercent: "100%",
+    color: 0xd2d7de,
     roughness: 0.28,
-    metalness: 0.08,
-    clearcoat: 0.55,
-    sheenColor: 0x935638,
-    lightColor: 0xff9944
+    metalness: 0.72,
+    clearcoat: 0.35,
+    sheenColor: 0xffffff,
+    lightColor: 0xfff7ec
+  },
+  platinum: {
+    title: "Brushed Platinum Edition",
+    tag: "LIMITED RESERVE // PLATINUM",
+    altitude: "Vapor Coated",
+    process: "Brushed Micro-Grain",
+    varietal: "Platinum Specular",
+    roast: "Mirror Satin 0.18 Ra",
+    notes: ["Luminous White", "Mirror Highlight", "Platinum Sheen", "Crisp Edge"],
+    density: "Ultra Dense (21.45g/cm³)",
+    temp: "Cold Chamber",
+    tds: "92% Specular Reflectance",
+    roastPercent: "100%",
+    color: 0xe8ebf0,
+    roughness: 0.20,
+    metalness: 0.62,
+    clearcoat: 0.45,
+    sheenColor: 0xffffff,
+    lightColor: 0xffffff
+  },
+  titanium: {
+    title: "Matte Titanium Reserve",
+    tag: "INDUSTRIAL LAB // TITANIUM",
+    altitude: "Anodized",
+    process: "Matte Sandblasted",
+    varietal: "Aerospace Ti-6Al-4V",
+    roast: "Matte 0.45 Ra",
+    notes: ["Gunmetal Grey", "Deep Contrast", "Velvet Shadow", "Satin Dark"],
+    density: "Light Alloy (4.43g/cm³)",
+    temp: "Thermal Vacuum",
+    tds: "65% Specular Reflectance",
+    roastPercent: "95%",
+    color: 0x7a818c,
+    roughness: 0.40,
+    metalness: 0.65,
+    clearcoat: 0.20,
+    sheenColor: 0xb5bcc7,
+    lightColor: 0xe8ecf2
   },
   gold: {
-    title: "Extracted Beans 24K Reserve",
-    tag: "SPECIAL EDITION // MYTHICAL",
+    title: "24K Champagne Gold Reserve",
+    tag: "SPECIAL EDITION // 24K GOLD",
     altitude: "Stratosphere",
     process: "Atomic Vapor Deposition",
     varietal: "Pure Aurum 24K",
-    roast: "Agtron #00 Luminous",
-    notes: ["Golden Caramel", "Amber Saffron", "Champagne Sparkle", "Bourbon"],
+    roast: "Luminous Polish",
+    notes: ["Champagne Gold", "Warm Reflection", "Amber Luster", "Golden Glow"],
     density: "Noble Metal (19.3g/cm³)",
-    temp: "98.0°C // 45s",
-    tds: "2.10% (Gold Standard)",
+    temp: "Furnace Annealed",
+    tds: "95% Gold Standard",
     roastPercent: "100%",
-    color: 0xffd700,
-    roughness: 0.18,
-    metalness: 0.95,
-    clearcoat: 0.75,
-    sheenColor: 0xfff0aa,
-    lightColor: 0xfff0bb
+    color: 0xd4b37f,
+    roughness: 0.22,
+    metalness: 0.88,
+    clearcoat: 0.50,
+    sheenColor: 0xfff3dd,
+    lightColor: 0xfff3dd
   }
 };
 
@@ -111,13 +113,15 @@ const roastProfiles = {
 function initThree() {
   const canvas = document.getElementById('webgl-canvas');
   
-  // 1. Scene & Atmospheric Fog
+  // 1. Scene & Atmospheric Fog (Centering around #F9F8F6)
   scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x080605, 0.045);
+  scene.background = new THREE.Color(0xf9f8f6);
+  scene.fog = new THREE.FogExp2(0xf9f8f6, 0.036);
 
-  // 2. Camera setup with defaultZ
+  // 2. Camera setup with defaultZ, lifted a bit with downward tilt
   camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 0, defaultZ);
+  camera.position.set(0, 1.25, defaultZ);
+  camera.lookAt(0, 0, 0);
 
   // 3. Renderer
   renderer = new THREE.WebGLRenderer({
@@ -129,35 +133,37 @@ function initThree() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   // 4. Lighting Rig
   setupLighting();
 
-  // 5. Build 3D Coffee Bean & Environment
-  createCoffeeBeanModel();
+  // 5. Build Ground & Contact Shadow
+  createCleanGround();
   createContactShadow();
-  createAromaParticles();
 
   // 6. Interaction Handlers
   setupInteractivity();
 
-  // 7. Render Loop
+  // 7. Load 3D Model with Fallback Pipeline
+  loadCentralModel();
+
+  // 8. Render Loop
   animate(0);
 }
 
 /* ==========================================================================
-   Studio Lighting Setup
+   Studio Lighting Setup (Soft Nordic Daylight & Caramel Accents)
    ========================================================================== */
 function setupLighting() {
-  // Ambient Soft Fill
-  ambientLight = new THREE.AmbientLight(0x281e18, 1.4);
+  // Ambient Soft Daylight (#F9F8F6)
+  ambientLight = new THREE.AmbientLight(0xf9f8f6, 2.0);
   scene.add(ambientLight);
 
-  // Key Light (Warm, Golden studio light)
-  keyLight = new THREE.DirectionalLight(0xffb86c, 3.2);
+  // Key Light (Warm daylight from upper right #FFF7EC)
+  keyLight = new THREE.DirectionalLight(0xfff7ec, 2.8);
   keyLight.position.set(4, 5, 4);
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.width = 1024;
@@ -165,23 +171,222 @@ function setupLighting() {
   keyLight.shadow.bias = -0.001;
   scene.add(keyLight);
 
-  // Rim Light (Sharp back rim to highlight bean silhouette)
-  rimLight = new THREE.DirectionalLight(0xff7722, 4.0);
+  // Rim Light (Warm caramel rim highlighting silhouette #C9B59C)
+  rimLight = new THREE.DirectionalLight(0xc9b59c, 2.8);
   rimLight.position.set(-4, -2, -3.5);
   scene.add(rimLight);
 
-  // Top Fill Light (Cool daylight soft fill)
-  fillLight = new THREE.DirectionalLight(0xa5c4ff, 1.5);
+  // Top Fill Light (Soft neutral oat bounce #EFE9E3)
+  fillLight = new THREE.DirectionalLight(0xefe9e3, 1.8);
   fillLight.position.set(-3, 4, 2);
   scene.add(fillLight);
 }
 
 /* ==========================================================================
-   Procedural 3D Coffee Bean Generation
+   3D Model Loader Pipeline (GLTFLoader + DRACOLoader + Bounding Normalization)
+   High-performance glTF streaming with Draco geometry decompression
+   ========================================================================== */
+const MODEL_PATH = 'assets/coffee_bean.glb';
+let modelSource = 'INITIALIZING';
+
+function updateLoaderUI(percent, statusText) {
+  const progressBar = document.getElementById('model-load-progress');
+  const percentText = document.getElementById('model-load-percent');
+  const statusEl = document.getElementById('model-load-status');
+
+  if (progressBar) progressBar.style.width = `${percent}%`;
+  if (percentText) percentText.textContent = `${percent}%`;
+  if (statusEl && statusText) statusEl.textContent = statusText;
+}
+
+function finishLoaderUI(success, finalStatus) {
+  const loaderOverlay = document.getElementById('model-loader');
+  const progressBar = document.getElementById('model-load-progress');
+  const percentText = document.getElementById('model-load-percent');
+  const statusEl = document.getElementById('model-load-status');
+
+  if (progressBar) progressBar.style.width = '100%';
+  if (percentText) percentText.textContent = '100%';
+  if (statusEl && finalStatus) statusEl.textContent = finalStatus;
+
+  setTimeout(() => {
+    if (loaderOverlay) {
+      loaderOverlay.classList.add('loaded');
+    }
+  }, 900);
+}
+
+function updateModelSourceTelemetry(text) {
+  const srcEl = document.getElementById('hud-model-src');
+  if (srcEl) {
+    srcEl.textContent = text;
+  }
+}
+
+/* ==========================================================================
+   Clean Silver Grey Material Finish
+   Applies a lustrous satin silver PBR finish with crisp highlights and reflections
+   ========================================================================== */
+function applySilverGreyFinish(target) {
+  if (!target) return;
+  target.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+      
+      const silverMat = new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(0xd2d7de),       // Clean lustrous silver grey
+        metalness: 0.72,                        // Satin metallic sheen
+        roughness: 0.28,                        // Silky reflection
+        clearcoat: 0.35,                        // Clearcoat glossy finish
+        clearcoatRoughness: 0.2,
+        reflectivity: 0.85
+      });
+      child.material = silverMat;
+      child.material.needsUpdate = true;
+    }
+  });
+}
+
+/* ==========================================================================
+   Material Finish Application (Traverses mesh hierarchy with GSAP)
+   ========================================================================== */
+function applyRoastToModel(target, profile) {
+  if (!target || !profile) return;
+
+  target.traverse((child) => {
+    if (child.isMesh && child.material) {
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((mat) => {
+        if (mat.color && profile.color !== undefined) {
+          gsap.to(mat.color, {
+            r: new THREE.Color(profile.color).r,
+            g: new THREE.Color(profile.color).g,
+            b: new THREE.Color(profile.color).b,
+            duration: 1.2,
+            ease: "power2.out"
+          });
+        }
+        if (mat.roughness !== undefined && profile.roughness !== undefined) {
+          gsap.to(mat, {
+            roughness: profile.roughness,
+            metalness: profile.metalness ?? mat.metalness,
+            clearcoat: profile.clearcoat ?? (mat.clearcoat || 0),
+            duration: 1.2
+          });
+        }
+        if (mat.sheenColor && profile.sheenColor !== undefined) {
+          gsap.to(mat.sheenColor, {
+            r: new THREE.Color(profile.sheenColor).r,
+            g: new THREE.Color(profile.sheenColor).g,
+            b: new THREE.Color(profile.sheenColor).b,
+            duration: 1.2
+          });
+        }
+      });
+    }
+  });
+}
+
+function loadCentralModel() {
+  updateLoaderUI(10, `Checking for ${MODEL_PATH}...`);
+
+  if (!beanGroup) {
+    beanGroup = new THREE.Group();
+    scene.add(beanGroup);
+  }
+
+  // Setup LoadingManager and DRACOLoader
+  const manager = new THREE.LoadingManager();
+  
+  manager.onProgress = (item, loaded, total) => {
+    const percent = Math.min(95, Math.round((loaded / total) * 100));
+    updateLoaderUI(percent, `Streaming assets (${loaded}/${total})...`);
+  };
+
+  const dracoLoader = new DRACOLoader(manager);
+  dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+  dracoLoader.setDecoderConfig({ type: 'js' });
+
+  const gltfLoader = new GLTFLoader(manager);
+  gltfLoader.setDRACOLoader(dracoLoader);
+
+  gltfLoader.load(
+    MODEL_PATH,
+    (gltf) => {
+      console.log('Successfully loaded 3D GLB model:', MODEL_PATH);
+
+      if (model && beanGroup.children.includes(model)) {
+        beanGroup.remove(model);
+      }
+
+      const importedScene = gltf.scene;
+
+      // Compute bounding box and normalize scale & pivot
+      const box = new THREE.Box3().setFromObject(importedScene);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+
+      // Target max dimension ~2.4 units to fill camera view at Z=5
+      const targetScale = maxDim > 0.0001 ? 2.4 / maxDim : 1.0;
+
+      // Pivot wrapper to center geometry at origin
+      const pivot = new THREE.Group();
+      importedScene.position.set(-center.x, -center.y, -center.z);
+      pivot.add(importedScene);
+      pivot.scale.setScalar(targetScale);
+      
+      // 3/4 view resting angle (tilted slightly downwards, classic three-quarter presentation)
+      pivot.rotation.set(0.28, -Math.PI / 4, 0.12);
+
+      // Apply clean silver grey material finish (removes any brown color)
+      applySilverGreyFinish(pivot);
+
+      model = pivot;
+      beanGroup.add(model);
+
+      modelSource = 'GLB (assets/coffee_bean.glb)';
+      updateModelSourceTelemetry(modelSource);
+      finishLoaderUI(true, 'GLB Model Loaded');
+
+      // Trigger elegant 3/4 view fade-in entrance
+      playModelFadeInAnimation();
+    },
+    (xhr) => {
+      if (xhr.lengthComputable && xhr.total > 0) {
+        const percent = Math.min(95, Math.round((xhr.loaded / xhr.total) * 100));
+        updateLoaderUI(percent, `Downloading ${Math.round(xhr.loaded / 1024)} KB...`);
+      }
+    },
+    (error) => {
+      console.warn(`Could not load ${MODEL_PATH} (${error.message || 'File not found'}), activating procedural coffee bean fallback.`);
+
+      if (model && beanGroup.children.includes(model)) {
+        beanGroup.remove(model);
+      }
+
+      createCoffeeBeanModel();
+
+      modelSource = 'PROCEDURAL (Ready for assets/coffee_bean.glb)';
+      updateModelSourceTelemetry(modelSource);
+      finishLoaderUI(false, 'Using Procedural Bean (Place coffee_bean.glb in assets/)');
+
+      // Trigger elegant 3/4 view fade-in entrance
+      playModelFadeInAnimation();
+    }
+  );
+}
+
+/* ==========================================================================
+   Procedural 3D Coffee Bean Generation (Fallback & Standalone)
    Creates an authentic, anatomically sculpted coffee bean with crevice & cleft
    ========================================================================== */
 function createCoffeeBeanModel() {
-  beanGroup = new THREE.Group();
+  if (!beanGroup) {
+    beanGroup = new THREE.Group();
+    scene.add(beanGroup);
+  }
 
   // 1. Generate High Resolution Procedural Textures
   const { diffuseMap, bumpMap, roughnessMap } = generateCoffeeBeanTextures();
@@ -266,8 +471,8 @@ function createCoffeeBeanModel() {
   model.rotation.set(0.2, -0.4, 0.15); // Appealing default resting angle
 
   beanGroup.add(model);
-  scene.add(beanGroup);
 }
+
 
 /* ==========================================================================
    Procedural Texture Generation (Canvas-based)
@@ -302,9 +507,9 @@ function generateCoffeeBeanTextures() {
     ctx.fill();
   }
 
-  // Chaff / Silver-skin center vein (the pale line inside coffee bean crevice)
+  // Chaff / Silver-skin center vein (matching palette oat #EFE9E3)
   ctx.save();
-  ctx.strokeStyle = 'rgba(180, 150, 120, 0.55)';
+  ctx.strokeStyle = 'rgba(239, 233, 227, 0.75)';
   ctx.lineWidth = 14;
   ctx.filter = 'blur(6px)';
   ctx.beginPath();
@@ -362,78 +567,102 @@ function createContactShadow() {
   const ctx = canvas.getContext('2d');
 
   const grad = ctx.createRadialGradient(128, 128, 10, 128, 128, 110);
-  grad.addColorStop(0, 'rgba(0, 0, 0, 0.85)');
-  grad.addColorStop(0.35, 'rgba(0, 0, 0, 0.45)');
-  grad.addColorStop(0.7, 'rgba(0, 0, 0, 0.15)');
-  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  grad.addColorStop(0, 'rgba(40, 28, 20, 0.45)');
+  grad.addColorStop(0.35, 'rgba(80, 60, 48, 0.22)');
+  grad.addColorStop(0.7, 'rgba(140, 120, 105, 0.08)');
+  grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 256, 256);
 
   const shadowTexture = new THREE.CanvasTexture(canvas);
-  const shadowGeo = new THREE.PlaneGeometry(3.5, 3.5);
+  const shadowGeo = new THREE.PlaneGeometry(3.6, 3.6);
   const shadowMat = new THREE.MeshBasicMaterial({
     map: shadowTexture,
     transparent: true,
-    opacity: 0.65,
+    opacity: 0.52,
     depthWrite: false
   });
 
   shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
   shadowMesh.rotation.x = -Math.PI / 2;
-  shadowMesh.position.y = -1.6;
+  shadowMesh.position.y = -1.238;
   scene.add(shadowMesh);
 }
 
 /* ==========================================================================
-   Floating Aroma Embers & Particles
+   Clean White Ground Plane
    ========================================================================== */
-function createAromaParticles() {
-  const count = 120;
-  const geometry = new THREE.BufferGeometry();
-  const positions = new Float32Array(count * 3);
-  const scales = new Float32Array(count);
+function createCleanGround() {
+  const groundGeo = new THREE.PlaneGeometry(120, 120);
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.65,
+    metalness: 0.02
+  });
+  groundMesh = new THREE.Mesh(groundGeo, groundMat);
+  groundMesh.rotation.x = -Math.PI / 2;
+  groundMesh.position.y = -1.24;
+  groundMesh.receiveShadow = true;
+  scene.add(groundMesh);
+}
 
-  for (let i = 0; i < count; i++) {
-    // Spherical volume around bean
-    const radius = 1.2 + Math.random() * 2.8;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(Math.random() * 2 - 1);
+/* ==========================================================================
+   Model Fade-In Animation (Clean 3/4 View Cinematic Entrance)
+   ========================================================================== */
+function playModelFadeInAnimation() {
+  if (!model) return;
 
-    positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-    positions[i * 3 + 2] = radius * Math.cos(phi);
-
-    scales[i] = Math.random() * 0.05 + 0.02;
+  // Ensure beanGroup stays firmly grounded at center
+  if (beanGroup) {
+    beanGroup.position.set(0, 0, 0);
+    beanGroup.rotation.set(0, 0, 0);
   }
 
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
+  // Kill running animations
+  gsap.killTweensOf(model.scale);
+  if (shadowMesh) gsap.killTweensOf(shadowMesh.material);
 
-  // Circular glow particle texture
-  const pCanvas = document.createElement('canvas');
-  pCanvas.width = 64;
-  pCanvas.height = 64;
-  const pCtx = pCanvas.getContext('2d');
-  const grad = pCtx.createRadialGradient(32, 32, 0, 32, 32, 30);
-  grad.addColorStop(0, 'rgba(255, 200, 120, 1)');
-  grad.addColorStop(0.3, 'rgba(229, 176, 90, 0.6)');
-  grad.addColorStop(1, 'rgba(229, 176, 90, 0)');
-  pCtx.fillStyle = grad;
-  pCtx.fillRect(0, 0, 64, 64);
-
-  const pTexture = new THREE.CanvasTexture(pCanvas);
-
-  const material = new THREE.PointsMaterial({
-    size: 0.12,
-    map: pTexture,
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    opacity: 0.75
+  const fadeTl = gsap.timeline({
+    delay: 0.15
   });
 
-  particles = new THREE.Points(geometry, material);
-  scene.add(particles);
+  // Fade in all mesh materials
+  model.traverse((child) => {
+    if (child.isMesh && child.material) {
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach((mat) => {
+        mat.transparent = true;
+        mat.opacity = 0;
+        fadeTl.to(mat, {
+          opacity: 1,
+          duration: 1.8,
+          ease: "power2.out"
+        }, 0);
+      });
+    }
+  });
+
+  // Smooth subtle scale entrance from 95% to 100%
+  const currentScale = model.scale.x;
+  model.scale.multiplyScalar(0.95);
+  fadeTl.to(model.scale, {
+    x: currentScale,
+    y: currentScale,
+    z: currentScale,
+    duration: 1.8,
+    ease: "power2.out"
+  }, 0);
+
+  // Contact shadow fades in smoothly with the model
+  if (shadowMesh) {
+    shadowMesh.material.opacity = 0;
+    shadowMesh.scale.set(1.0, 1.0, 1.0);
+    fadeTl.to(shadowMesh.material, {
+      opacity: 0.45,
+      duration: 1.6,
+      ease: "power2.out"
+    }, 0);
+  }
 }
 
 /* ==========================================================================
@@ -489,12 +718,28 @@ function playZoomSound(zoomingIn) {
   osc.stop(now + 2.0);
 }
 
+function playDropSound() {
+  if (!audioEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(130, now);
+  osc.frequency.exponentialRampToValueAtTime(45, now + 0.14);
+  gain.gain.setValueAtTime(0.22, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 0.2);
+}
+
 /* ==========================================================================
    Telemetry & HUD Updates
    ========================================================================== */
 function updateTelemetry() {
-  const camZ = camera.position.z.toFixed(2);
-  const rotY = ((model.rotation.y * 180 / Math.PI) % 360).toFixed(1);
+  const camZ = camera ? camera.position.z.toFixed(2) : '5.00';
+  const rotY = model ? ((model.rotation.y * 180 / Math.PI) % 360).toFixed(1) : '0.0';
   
   const hudCamZ = document.getElementById('hud-cam-z');
   const hudRotY = document.getElementById('hud-rot-y');
@@ -556,32 +801,8 @@ function setRoastProfile(roastKey) {
   if (!profile) return;
   currentRoast = roastKey;
 
-  // Animate material transition with GSAP
-  if (model && model.material) {
-    gsap.to(model.material.color, {
-      r: new THREE.Color(profile.color).r,
-      g: new THREE.Color(profile.color).g,
-      b: new THREE.Color(profile.color).b,
-      duration: 1.2,
-      ease: "power2.out"
-    });
-
-    gsap.to(model.material, {
-      roughness: profile.roughness,
-      metalness: profile.metalness,
-      clearcoat: profile.clearcoat,
-      duration: 1.2
-    });
-
-    if (profile.sheenColor) {
-      gsap.to(model.material.sheenColor, {
-        r: new THREE.Color(profile.sheenColor).r,
-        g: new THREE.Color(profile.sheenColor).g,
-        b: new THREE.Color(profile.sheenColor).b,
-        duration: 1.2
-      });
-    }
-  }
+  // Animate material transition with GSAP across procedural or GLTF meshes
+  applyRoastToModel(model, profile);
 
   // Animate key light color transition
   if (keyLight) {
@@ -653,11 +874,13 @@ function setupInteractivity() {
         ease: "power2.inOut" // Smooth ease-in, ease-out transition
       }, 0);
 
-      tl.to(model.rotation, {
-        y: model.rotation.y + Math.PI * 2, // Full 360-degree spin
-        duration: animationDuration,
-        ease: "power2.inOut"
-      }, 0);
+      if (model) {
+        tl.to(model.rotation, {
+          y: model.rotation.y + Math.PI * 2, // Full 360-degree spin
+          duration: animationDuration,
+          ease: "power2.inOut"
+        }, 0);
+      }
 
       isZoomed = true;
       setZoomUIState(true);
@@ -669,11 +892,13 @@ function setupInteractivity() {
         ease: "power2.inOut"
       }, 0);
 
-      tl.to(model.rotation, {
-        y: model.rotation.y - Math.PI * 2, // Spins backward (or + to keep spinning forward)
-        duration: animationDuration,
-        ease: "power2.inOut"
-      }, 0);
+      if (model) {
+        tl.to(model.rotation, {
+          y: model.rotation.y - Math.PI * 2, // Spins backward (or + to keep spinning forward)
+          duration: animationDuration,
+          ease: "power2.inOut"
+        }, 0);
+      }
 
       isZoomed = false;
       setZoomUIState(false);
@@ -752,6 +977,24 @@ function setupInteractivity() {
     });
   });
 
+  // Replay Fade-in Button
+  const replayBtn = document.getElementById('btn-replay-fade') || document.getElementById('btn-replay-drop');
+  if (replayBtn) {
+    replayBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playModelFadeInAnimation();
+    });
+  }
+
+  // Also trigger fade-in replay on clicking brand logo
+  const logoBtn = document.getElementById('brand-logo-btn');
+  if (logoBtn) {
+    logoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playModelFadeInAnimation();
+    });
+  }
+
   // Sound Toggle Button
   const audioBtn = document.getElementById('audio-toggle-btn');
   const iconMuted = document.getElementById('audio-icon-muted');
@@ -774,17 +1017,17 @@ function setupInteractivity() {
     e.stopPropagation();
     lightMode = (lightMode + 1) % 3;
     if (lightMode === 0) {
-      // Warm Amber Studio
-      gsap.to(keyLight.color, { r: 1.0, g: 0.72, b: 0.42, duration: 1 });
-      gsap.to(rimLight.color, { r: 1.0, g: 0.47, b: 0.13, duration: 1 });
+      // Nordic Studio Daylight (#FFF7EC / #C9B59C)
+      gsap.to(keyLight.color, { r: 1.0, g: 0.97, b: 0.92, duration: 1 });
+      gsap.to(rimLight.color, { r: 0.79, g: 0.71, b: 0.61, duration: 1 });
     } else if (lightMode === 1) {
-      // Cyber Roastery Neon
-      gsap.to(keyLight.color, { r: 0.2, g: 0.8, b: 1.0, duration: 1 });
-      gsap.to(rimLight.color, { r: 1.0, g: 0.1, b: 0.6, duration: 1 });
+      // Warm Caramel Sunset (#C9B59C / #D9CFC7)
+      gsap.to(keyLight.color, { r: 0.79, g: 0.71, b: 0.61, duration: 1 });
+      gsap.to(rimLight.color, { r: 0.85, g: 0.81, b: 0.78, duration: 1 });
     } else {
-      // Pure White Laboratory
-      gsap.to(keyLight.color, { r: 1.0, g: 1.0, b: 1.0, duration: 1 });
-      gsap.to(rimLight.color, { r: 0.9, g: 0.9, b: 1.0, duration: 1 });
+      // Gallery Minimalist White (#F9F8F6 / #EFE9E3)
+      gsap.to(keyLight.color, { r: 0.98, g: 0.97, b: 0.96, duration: 1 });
+      gsap.to(rimLight.color, { r: 0.94, g: 0.91, b: 0.89, duration: 1 });
     }
   });
 
@@ -801,33 +1044,14 @@ function onWindowResize() {
 }
 
 /* ==========================================================================
-   Render Animation Loop
+   Render Animation Loop (3/4 View - Clean Grounded Model)
    ========================================================================== */
 function animate(time) {
   requestAnimationFrame(animate);
 
-  const t = time * 0.001;
-
-  // Gentle idle floating motion on bean group (without interrupting GSAP timeline on model)
-  if (beanGroup) {
-    beanGroup.position.y = Math.sin(t * 1.5) * 0.08;
-    beanGroup.rotation.z = Math.sin(t * 0.8) * 0.04;
-    
-    // Parallax tilt from mouse
-    beanGroup.rotation.x = THREE.MathUtils.lerp(beanGroup.rotation.x, mouseParallax.y * 0.5, 0.05);
-  }
-
-  // Contact shadow breathing in sync with bean float
-  if (shadowMesh) {
-    const shadowScale = 1.0 - Math.sin(t * 1.5) * 0.08;
-    shadowMesh.scale.set(shadowScale, shadowScale, 1.0);
-    shadowMesh.material.opacity = 0.65 - Math.sin(t * 1.5) * 0.12;
-  }
-
-  // Aroma particles gentle swirl
-  if (particles) {
-    particles.rotation.y = t * 0.05;
-    particles.rotation.x = Math.sin(t * 0.03) * 0.1;
+  // Keep camera tilted downwards focusing at bean center
+  if (camera) {
+    camera.lookAt(0, 0, 0);
   }
 
   // Update HUD

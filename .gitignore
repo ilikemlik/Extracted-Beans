@@ -1,0 +1,12 @@
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Antigravity IDE and internal agents
+.agents/
+.gemini/
+.idea/
+.vscode/
+
+# Logs
+*.log

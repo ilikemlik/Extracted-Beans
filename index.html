@@ -6,7 +6,7 @@
   <title>Extracted Beans | Single Origin 3D Experience</title>
   <meta name="description" content="Immersive 3D interactive coffee bean experience powered by Three.js and GSAP. Explore single origin coffee extraction, roast profiles, and cellular bean anatomy.">
   <meta name="keywords" content="coffee, 3d, threejs, gsap, specialty coffee, artisanal roasting, extraction">
-  <meta name="theme-color" content="#080605">
+  <meta name="theme-color" content="#F9F8F6">
   
   <!-- Favicon -->
   <link rel="icon" type="image/jpeg" href="assets/logo.jpg">
@@ -34,6 +34,23 @@
 
   <!-- WebGL Three.js Canvas Container -->
   <canvas id="webgl-canvas"></canvas>
+
+  <!-- 3D Model Loading HUD Overlay -->
+  <div class="model-loader-overlay" id="model-loader" aria-live="polite">
+    <div class="loader-card">
+      <div class="loader-spinner"></div>
+      <div class="loader-info">
+        <div class="loader-header">
+          <span class="loader-title">3D MODEL STREAM</span>
+          <span class="loader-percent" id="model-load-percent">0%</span>
+        </div>
+        <div class="loader-track">
+          <div class="loader-bar" id="model-load-progress"></div>
+        </div>
+        <span class="loader-status" id="model-load-status">Connecting to assets/coffee_bean.glb...</span>
+      </div>
+    </div>
+  </div>
 
   <!-- Ambient Vignette & Lighting Atmosphere -->
   <div class="ambient-vignette"></div>
@@ -88,6 +105,14 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
           </svg>
         </button>
+
+        <!-- Replay Fade-in Button -->
+        <button class="icon-btn interactive-control" id="btn-replay-fade" title="Replay 3/4 View Fade-in Animation" aria-label="Replay Fade-in">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
       </div>
     </header>
 
@@ -123,32 +148,32 @@
       
       <!-- Left: Origin Details Card -->
       <article class="origin-card" id="origin-info-card">
-        <span class="card-tag" id="origin-tag">LOT NO. 04 // SPECIAL RESERVE</span>
-        <h2 class="card-title" id="origin-title">Colombian Geisha Natural</h2>
+        <span class="card-tag" id="origin-tag">STUDIO EDITION // SILVER GREY</span>
+        <h2 class="card-title" id="origin-title">Silver Grey Sculpted Bean</h2>
         
         <div class="card-notes" id="origin-notes">
-          <span class="flavor-pill">Bergamot</span>
-          <span class="flavor-pill">Jasmine Bloom</span>
-          <span class="flavor-pill">Honey Melon</span>
-          <span class="flavor-pill">Cacao Nib</span>
+          <span class="flavor-pill">Satin Silver</span>
+          <span class="flavor-pill">Clean Specular</span>
+          <span class="flavor-pill">Soft Highlight</span>
+          <span class="flavor-pill">Cool Metallic</span>
         </div>
 
         <div class="specs-grid">
           <div class="spec-item">
-            <span class="spec-label">Altitude</span>
-            <span class="spec-val" id="spec-altitude">1,950 MASL</span>
+            <span class="spec-label">Material</span>
+            <span class="spec-val" id="spec-altitude">999 Fine Silver Alloy</span>
           </div>
           <div class="spec-item">
             <span class="spec-label">Process</span>
-            <span class="spec-val" id="spec-process">Anaerobic Slow</span>
+            <span class="spec-val" id="spec-process">Precision Satin Polish</span>
           </div>
           <div class="spec-item">
-            <span class="spec-label">Varietal</span>
-            <span class="spec-val" id="spec-varietal">Geisha T2722</span>
+            <span class="spec-label">Reflectance</span>
+            <span class="spec-val" id="spec-varietal">85% Specular</span>
           </div>
           <div class="spec-item">
-            <span class="spec-label">Roast Level</span>
-            <span class="spec-val" id="spec-roast">Agtron #64 Medium</span>
+            <span class="spec-label">Finish</span>
+            <span class="spec-val" id="spec-roast">Specular 0.28 Ra</span>
           </div>
         </div>
       </article>
@@ -156,9 +181,9 @@
       <!-- Right: Realtime Camera & Rotation Telemetry -->
       <div class="camera-telemetry">
         <div class="roast-selector interactive-control" id="roast-selector-bar">
-          <button class="roast-option" data-roast="light" id="btn-roast-light">Light</button>
-          <button class="roast-option active" data-roast="medium" id="btn-roast-medium">Medium</button>
-          <button class="roast-option" data-roast="dark" id="btn-roast-dark">Dark</button>
+          <button class="roast-option active" data-roast="silver" id="btn-roast-silver">Silver</button>
+          <button class="roast-option" data-roast="platinum" id="btn-roast-platinum">Platinum</button>
+          <button class="roast-option" data-roast="titanium" id="btn-roast-titanium">Titanium</button>
           <button class="roast-option" data-roast="gold" id="btn-roast-gold">24K Gold</button>
         </div>
 
@@ -174,6 +199,10 @@
           <div class="telemetry-row">
             <span class="label">VIEW MODE:</span>
             <span class="value" id="hud-mode">OVERVIEW</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="label">MODEL SOURCE:</span>
+            <span class="value" id="hud-model-src">INITIALIZING</span>
           </div>
         </div>
       </div>
@@ -199,7 +228,7 @@
       </div>
 
       <div class="footer-hint">
-        <span>Click anywhere to toggle 3D camera zoom · Drag to orbit · Press Space to trigger</span>
+        <span>Click anywhere to toggle 3D zoom · Drag to orbit · Supports GLB 3D Model in assets/coffee_bean.glb</span>
       </div>
     </footer>
 
