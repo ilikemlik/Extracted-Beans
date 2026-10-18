@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2D2314"/>
+      <stop offset="50%" stop-color="#1A140B"/>
+      <stop offset="100%" stop-color="#0E0A05"/>
+    </linearGradient>
+    <linearGradient id="pureGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF2D6"/>
+      <stop offset="35%" stop-color="#E5B869"/>
+      <stop offset="70%" stop-color="#C2933C"/>
+      <stop offset="100%" stop-color="#8C651A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="320" height="320" rx="28" fill="url(#goldBg)"/>
+  <rect width="316" height="316" x="2" y="2" rx="26" fill="none" stroke="url(#pureGold)" stroke-width="1.8" stroke-opacity="0.6"/>
+
+  <!-- Botanical Geisha Blossom / Crown Emblem -->
+  <g transform="translate(160, 125)">
+    <!-- Ornate radial stars -->
+    <circle cx="0" cy="0" r="58" fill="none" stroke="url(#pureGold)" stroke-width="1.5" stroke-opacity="0.7"/>
+    <circle cx="0" cy="0" r="68" fill="none" stroke="#E5B869" stroke-width="0.8" stroke-dasharray="3,5" opacity="0.5"/>
+    
+    <!-- Stylized 8-pointed star / coffee flower blossom -->
+    <path d="M0,-46 L12,-16 L44,-16 L20,4 L28,34 L0,18 L-28,34 L-20,4 L-44,-16 L-12,-16 Z" fill="none" stroke="url(#pureGold)" stroke-width="2.2"/>
+    <circle cx="0" cy="0" r="10" fill="url(#pureGold)"/>
+    <circle cx="0" cy="0" r="4" fill="#1A140B"/>
+  </g>
+
+  <!-- Typography -->
+  <text x="160" y="232" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="16" font-weight="700" fill="#FFF2D6" letter-spacing="3.5">HACIENDA LA ESMERALDA</text>
+  <text x="160" y="256" text-anchor="middle" font-family="'Space Grotesk', monospace" font-size="11" font-weight="700" fill="#E5B869" letter-spacing="4">GEISHA RESERVE 24K</text>
+  <text x="160" y="280" text-anchor="middle" font-family="'Space Grotesk', monospace" font-size="8.5" fill="#C9B59C" letter-spacing="2.5">BOQUETE // PANAMA</text>
+</svg>

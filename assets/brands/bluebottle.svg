@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B2533"/>
+      <stop offset="50%" stop-color="#111822"/>
+      <stop offset="100%" stop-color="#0A0E14"/>
+    </linearGradient>
+    <linearGradient id="bbBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#80C8F8"/>
+      <stop offset="100%" stop-color="#0088CC"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="320" height="320" rx="28" fill="url(#bbGrad)"/>
+  <rect width="316" height="316" x="2" y="2" rx="26" fill="none" stroke="#80C8F8" stroke-width="1.5" stroke-opacity="0.4"/>
+
+  <!-- Bottle Icon Motif -->
+  <g transform="translate(160, 125)">
+    <!-- Thin concentric rings -->
+    <circle cx="0" cy="0" r="62" fill="none" stroke="#80C8F8" stroke-width="1.2" opacity="0.4"/>
+    <circle cx="0" cy="0" r="50" fill="none" stroke="#D9CFC7" stroke-width="0.8" stroke-dasharray="2,4" opacity="0.5"/>
+    
+    <!-- Stylized Vintage Milk / Cold Brew Bottle -->
+    <path d="M-9,-36 L9,-36 L12,-20 L20,-12 L20,34 L-20,34 L-20,-12 L-12,-20 Z" fill="none" stroke="url(#bbBlue)" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="-8" y="-40" width="16" height="4" rx="2" fill="url(#bbBlue)"/>
+    <line x1="-12" y1="4" x2="12" y2="4" stroke="#80C8F8" stroke-width="1.5" opacity="0.7"/>
+    <line x1="-12" y1="12" x2="12" y2="12" stroke="#80C8F8" stroke-width="1.5" opacity="0.7"/>
+  </g>
+
+  <!-- Typography -->
+  <text x="160" y="234" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="19" font-weight="700" fill="#F9F8F6" letter-spacing="4">BLUE BOTTLE</text>
+  <text x="160" y="258" text-anchor="middle" font-family="'Space Grotesk', monospace" font-size="10.5" font-weight="600" fill="#80C8F8" letter-spacing="3.5">OAKLAND // CALIFORNIA</text>
+  <text x="160" y="282" text-anchor="middle" font-family="'Space Grotesk', monospace" font-size="8.5" fill="#8E7C70" letter-spacing="2">HISTORIC SINGLE ORIGIN</text>
+</svg>

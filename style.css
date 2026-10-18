@@ -427,6 +427,16 @@ a,
 }
 
 /* Right HUD: Camera & Live 3D Coordinates */
+/* Right HUD Area: Telemetry, Roast Selector & Extracted Coffee Card */
+.right-hud-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  position: relative;
+  z-index: 15;
+}
+
 .camera-telemetry {
   display: flex;
   flex-direction: column;
@@ -446,6 +456,7 @@ a,
   flex-direction: column;
   gap: 6px;
   min-width: 175px;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .telemetry-row {
@@ -469,11 +480,12 @@ a,
   display: flex;
   background: var(--bg-card);
   backdrop-filter: blur(18px);
-  border: 1px solid var(--border-caramel);
+  border: 1.5px solid var(--border-caramel);
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-subtle);
   padding: 4px;
   gap: 4px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .roast-option {
@@ -502,35 +514,819 @@ a,
 }
 
 /* ==========================================================================
-   Bottom Action Bar & Interactive Prompt
+   2D Extracted Coffee Specification Feed & IndexedDB Panel
+   Nordic Warm Luxury Frosted Glass Architecture
+   ========================================================================== */
+.extracted-list-panel {
+  width: 510px;
+  max-width: 90vw;
+  height: calc(100vh - 175px);
+  max-height: 720px;
+  background: rgba(249, 248, 246, 0.92);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1.5px solid var(--accent-caramel);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: 0 24px 60px rgba(60, 44, 34, 0.16), 0 4px 16px rgba(60, 44, 34, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate3d(50px, 0, 0);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.6s;
+  will-change: transform, opacity;
+  z-index: 20;
+}
+
+.extracted-list-panel.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Header inside list panel */
+.list-panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.list-header-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.list-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pulse-amber-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #D97706;
+  box-shadow: 0 0 8px rgba(217, 119, 6, 0.7);
+  animation: pulseAmber 2.2s infinite ease-in-out;
+}
+
+@keyframes pulseAmber {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.35); opacity: 1; box-shadow: 0 0 12px rgba(217, 119, 6, 0.9); }
+}
+
+.list-panel-title {
+  font-family: var(--font-mono);
+  font-size: 0.70rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--accent-caramel-deep);
+  text-transform: uppercase;
+}
+
+.db-counter-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(201, 181, 156, 0.25);
+  border: 1px solid rgba(201, 181, 156, 0.5);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.list-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: var(--palette-cream);
+  border: 1px solid var(--border-caramel);
+  color: var(--accent-caramel-deep);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  box-shadow: var(--shadow-subtle);
+}
+
+.action-pill-btn:hover {
+  background: var(--accent-caramel);
+  color: #ffffff;
+  border-color: var(--accent-caramel-deep);
+  transform: translateY(-1px);
+}
+
+.extracted-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(239, 233, 227, 0.8);
+  border: 1px solid var(--border-caramel);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.extracted-close-btn:hover {
+  background: var(--accent-caramel);
+  color: var(--palette-cream);
+  border-color: var(--accent-caramel-deep);
+  transform: rotate(90deg) scale(1.05);
+}
+
+/* Roast Style Filter Pills Bar */
+.list-filter-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.list-filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chip {
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: rgba(239, 233, 227, 0.7);
+  font-family: var(--font-display);
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  background: rgba(239, 233, 227, 0.95);
+  border-color: var(--accent-caramel);
+  color: var(--text-primary);
+}
+
+.filter-chip.active {
+  background: var(--accent-caramel);
+  color: var(--text-primary);
+  border-color: var(--accent-caramel-deep);
+  box-shadow: 0 2px 8px rgba(201, 181, 156, 0.45);
+}
+
+/* Scrollable Container of Cards */
+.extracted-cards-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 4px 6px 0;
+  scroll-behavior: smooth;
+}
+
+.extracted-cards-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+.extracted-cards-container::-webkit-scrollbar-track {
+  background: rgba(217, 207, 199, 0.25);
+  border-radius: 4px;
+}
+
+.extracted-cards-container::-webkit-scrollbar-thumb {
+  background: var(--accent-caramel);
+  border-radius: 4px;
+}
+
+.extracted-cards-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-caramel-deep);
+}
+
+/* Individual 2D Extracted Coffee Card in Feed */
+.extracted-item-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: rgba(239, 233, 227, 0.65);
+  border: 1.5px solid var(--border-subtle);
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.extracted-item-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.92);
+  border-color: var(--accent-caramel);
+  box-shadow: 0 10px 24px rgba(100, 80, 65, 0.12);
+}
+
+.extracted-item-card.is-active {
+  background: #ffffff;
+  border-color: #A37C42;
+  box-shadow: 0 12px 32px rgba(163, 124, 66, 0.20), inset 0 0 0 1px #A37C42;
+}
+
+.card-active-indicator {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  display: none;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.60rem;
+  font-weight: 700;
+  color: #8C651A;
+  letter-spacing: 0.1em;
+}
+
+.extracted-item-card.is-active .card-active-indicator {
+  display: flex;
+}
+
+.active-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8C651A;
+  animation: pulseAmber 1.8s infinite;
+}
+
+/* Left Column: Brand Visual Badge & Origin */
+.item-card-left {
+  width: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.item-brand-visual {
+  width: 100px;
+  height: 100px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #181412;
+  border: 1px solid var(--border-caramel);
+  box-shadow: var(--shadow-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-brand-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.item-origin-meta {
+  font-family: var(--font-mono);
+  font-size: 0.60rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* Right Column: Title & 3 Quick Metrics */
+.item-card-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.item-card-heading {
+  margin-bottom: 10px;
+}
+
+.item-brand-title {
+  font-size: 1.10rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.item-roast-edition {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--accent-caramel-deep);
+  letter-spacing: 0.06em;
+  margin-top: 1px;
+}
+
+/* 3 Quick Extraction Information Items Grid */
+.item-metrics-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.item-metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(239, 233, 227, 0.55);
+  border: 1px solid var(--border-subtle);
+}
+
+.item-metric-row.gold-tint {
+  background: rgba(201, 181, 156, 0.18);
+  border-color: rgba(201, 181, 156, 0.5);
+}
+
+.metric-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metric-label-mini {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.metric-val-bold {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.metric-val-bold.gold {
+  color: #8C651A;
+  font-weight: 800;
+}
+
+/* Telemetry Pill Strip */
+.item-telemetry-strip {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.item-tel-pill {
+  padding: 2px 7px;
+  background: rgba(239, 233, 227, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.60rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* Tasting notes row */
+.item-notes-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.item-note-pill {
+  font-size: 0.62rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(201, 181, 156, 0.22);
+  border: 1px solid rgba(201, 181, 156, 0.4);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* Mode Transition Rules (Fades origin card & telemetry when in Extracted Mode) */
+.extracted-mode-active #origin-info-card {
+  opacity: 0;
+  transform: translate3d(-40px, 0, 0);
+  pointer-events: none;
+}
+
+.extracted-mode-active #telemetry-box {
+  opacity: 0;
+  transform: translate3d(0, -10px, 0);
+  pointer-events: none;
+  display: none;
+}
+
+/* ==========================================================================
+   Modal Dialog: Log New Coffee Extraction to IndexedDB
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(36, 27, 22, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.modal-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.modal-card {
+  background: var(--palette-cream);
+  border: 1.5px solid var(--accent-caramel);
+  border-radius: var(--radius-lg);
+  width: 560px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+  box-shadow: 0 28px 70px rgba(36, 27, 22, 0.28);
+  transform: scale(0.95) translateY(12px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-backdrop.active .modal-card {
+  transform: scale(1) translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-tag {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--accent-caramel-deep);
+  text-transform: uppercase;
+}
+
+.modal-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
+.modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(239, 233, 227, 0.8);
+  border: 1px solid var(--border-caramel);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.modal-close-btn:hover {
+  background: var(--accent-caramel);
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-row {
+  display: grid;
+  gap: 14px;
+}
+
+.form-row.two-col {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.form-row.three-col {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.form-group input,
+.form-group select {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  border: 1px solid var(--border-caramel);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--accent-caramel-deep);
+  box-shadow: 0 0 0 3px rgba(201, 181, 156, 0.25);
+}
+
+.form-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+}
+
+.form-section-divider span {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--accent-caramel-deep);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.form-section-divider::before,
+.form-section-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.btn-cancel {
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 0.80rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-cancel:hover {
+  background: rgba(217, 207, 199, 0.4);
+  color: var(--text-primary);
+}
+
+.btn-submit {
+  padding: 10px 24px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--accent-caramel-deep);
+  background: linear-gradient(135deg, var(--accent-caramel), var(--accent-caramel-deep));
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 0.80rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(169, 143, 112, 0.35);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(169, 143, 112, 0.45);
+}
+
+/* ==========================================================================
+   Bottom Action Bar & Primary "View Extracted Coffee" Button
    ========================================================================== */
 .bottom-bar {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
 }
 
-.click-prompt-pill {
+.bottom-actions-container {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 28px;
-  background: rgba(249, 248, 246, 0.92);
-  backdrop-filter: blur(24px);
-  border: 1.5px solid var(--accent-caramel);
-  border-radius: var(--radius-full);
-  box-shadow: var(--shadow-elevated);
-  cursor: pointer;
-  transition: var(--transition-smooth);
 }
 
-.click-prompt-pill:hover {
+/* Primary Button: View Extracted Coffee */
+.primary-extracted-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, rgba(249, 248, 246, 0.96), rgba(239, 233, 227, 0.94));
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1.5px solid var(--accent-caramel);
+  border-radius: var(--radius-full);
+  box-shadow: 0 12px 36px rgba(100, 80, 65, 0.12), inset 0 1px 0 #ffffff;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+
+.btn-coffee-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, rgba(201, 181, 156, 0.45), rgba(169, 143, 112, 0.4));
+  filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+
+.primary-extracted-btn:hover {
   transform: translateY(-2px) scale(1.02);
   border-color: var(--accent-caramel-deep);
-  box-shadow: 0 16px 42px rgba(100, 80, 65, 0.16);
+  box-shadow: 0 18px 48px rgba(100, 80, 65, 0.18);
   background: #ffffff;
+}
+
+.primary-extracted-btn:hover .btn-coffee-glow {
+  opacity: 1;
+}
+
+.primary-extracted-btn.is-active {
+  background: linear-gradient(135deg, #241B16, #3B2D25);
+  border-color: var(--accent-caramel);
+  box-shadow: 0 16px 42px rgba(36, 27, 22, 0.35);
+}
+
+.primary-extracted-btn.is-active .btn-primary-title {
+  color: #F9F8F6;
+}
+
+.primary-extracted-btn.is-active .btn-primary-sub {
+  color: var(--palette-caramel);
+}
+
+.primary-extracted-btn.is-active .coffee-drop-icon {
+  stroke: var(--accent-caramel);
+}
+
+.primary-extracted-btn.is-active .btn-status-pill {
+  background: var(--accent-caramel);
+  color: #241B16;
+}
+
+.btn-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(201, 181, 156, 0.22);
+  border: 1px solid rgba(201, 181, 156, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.coffee-drop-icon {
+  stroke: var(--accent-caramel-deep);
+  transition: transform 0.3s ease;
+}
+
+.primary-extracted-btn:hover .coffee-drop-icon {
+  transform: translateY(1px);
+}
+
+.btn-text-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.btn-primary-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.btn-primary-sub {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  margin-top: 1px;
+}
+
+.btn-status-pill {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(201, 181, 156, 0.28);
+  border: 1px solid rgba(201, 181, 156, 0.45);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+/* Secondary Button: 2.5X Macro Zoom */
+.secondary-macro-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-subtle);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  transition: var(--transition-fast);
+}
+
+.secondary-macro-pill:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-caramel);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.secondary-macro-pill.is-zoomed {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #D97706;
+  color: var(--text-primary);
 }
 
 .prompt-icon-ring {
@@ -629,8 +1425,25 @@ a,
 }
 
 /* ==========================================================================
-   Responsive Adaptations
+   Responsive Adaptations (Vertical Split Layout on Mobile)
    ========================================================================== */
+@media (max-width: 1024px) {
+  .extracted-list-panel {
+    width: 440px;
+    padding: 16px;
+    height: calc(100vh - 165px);
+  }
+  
+  .item-card-left {
+    width: 95px;
+  }
+  
+  .item-brand-visual {
+    width: 90px;
+    height: 90px;
+  }
+}
+
 @media (max-width: 900px) {
   .macro-panel {
     top: auto;
@@ -648,6 +1461,84 @@ a,
   .specs-grid {
     grid-template-columns: 1fr;
   }
+
+  .extracted-list-panel {
+    width: 400px;
+    padding: 14px 16px;
+  }
+
+  .item-brand-visual {
+    width: 85px;
+    height: 85px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Vertical Split: 3D Bean owns upper half, Extracted Specs Feed owns lower half */
+  .extracted-mode-active .right-hud-wrapper {
+    position: fixed;
+    bottom: 80px;
+    left: 12px;
+    right: 12px;
+    align-items: center;
+    width: calc(100vw - 24px);
+    z-index: 25;
+  }
+
+  .extracted-list-panel {
+    width: 100%;
+    max-width: 100%;
+    height: calc(52vh);
+    max-height: 440px;
+    padding: 14px 14px 10px 14px;
+    border-radius: var(--radius-md);
+    box-shadow: 0 16px 40px rgba(40, 30, 20, 0.25);
+  }
+
+  .extracted-item-card {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .item-card-left {
+    width: 80px;
+    gap: 6px;
+  }
+
+  .item-brand-visual {
+    width: 75px;
+    height: 75px;
+  }
+
+  .item-brand-title {
+    font-size: 0.98rem;
+  }
+
+  .item-metric-row {
+    padding: 4px 8px;
+  }
+
+  .item-telemetry-strip {
+    display: none; /* Hide non-critical micro pills on small phones */
+  }
+
+  .primary-extracted-btn {
+    padding: 10px 18px;
+    gap: 12px;
+  }
+
+  .btn-primary-title {
+    font-size: 0.78rem;
+  }
+
+  .btn-primary-sub {
+    font-size: 0.60rem;
+  }
+
+  .secondary-macro-pill {
+    padding: 10px 14px;
+    font-size: 0.68rem;
+  }
 }
 
 @media (max-width: 640px) {
@@ -660,15 +1551,7 @@ a,
   }
   
   .roast-selector {
-    transform: scale(0.9);
-  }
-  
-  .click-prompt-pill {
-    padding: 10px 20px;
-  }
-  
-  .prompt-title {
-    font-size: 0.78rem;
+    transform: scale(0.92);
   }
 }
 
