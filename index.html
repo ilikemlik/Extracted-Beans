@@ -145,66 +145,8 @@
 
     <!-- Main Central / Telemetry HUD -->
     <section class="main-hud">
-      
-      <!-- Left: Origin Details Card -->
-      <article class="origin-card" id="origin-info-card">
-        <span class="card-tag" id="origin-tag">STUDIO FINISH // LIQUID CHROME</span>
-        <h2 class="card-title" id="origin-title">Reflective Metal Sculpted Bean</h2>
-        
-        <div class="card-notes" id="origin-notes">
-          <span class="flavor-pill">Mirror Reflective</span>
-          <span class="flavor-pill">Liquid Chrome</span>
-          <span class="flavor-pill">High Specular</span>
-          <span class="flavor-pill">Sleek Silver</span>
-        </div>
-
-        <div class="specs-grid">
-          <div class="spec-item">
-            <span class="spec-label">Material</span>
-            <span class="spec-val" id="spec-altitude">Chrome Mirror Alloy</span>
-          </div>
-          <div class="spec-item">
-            <span class="spec-label">Process</span>
-            <span class="spec-val" id="spec-process">Diamond Mirror Lapping</span>
-          </div>
-          <div class="spec-item">
-            <span class="spec-label">Reflectance</span>
-            <span class="spec-val" id="spec-varietal">99.2% Specular</span>
-          </div>
-          <div class="spec-item">
-            <span class="spec-label">Finish</span>
-            <span class="spec-val" id="spec-roast">Mirror 0.04 Ra</span>
-          </div>
-        </div>
-      </article>
-
-      <!-- Right HUD Area: Roast Selector & Telemetry & Extracted Coffee Card -->
+      <!-- Right HUD Area: Extracted Coffee Card Panel -->
       <div class="right-hud-wrapper" id="right-hud-wrapper">
-        <div class="roast-selector interactive-control" id="roast-selector-bar">
-          <button class="roast-option active" data-roast="silver" id="btn-roast-silver">Chrome</button>
-          <button class="roast-option" data-roast="platinum" id="btn-roast-platinum">Platinum</button>
-          <button class="roast-option" data-roast="titanium" id="btn-roast-titanium">Black Chrome</button>
-          <button class="roast-option" data-roast="gold" id="btn-roast-gold">24K Gold</button>
-        </div>
-
-        <div class="telemetry-box" id="telemetry-box">
-          <div class="telemetry-row">
-            <span class="label">CAMERA Z:</span>
-            <span class="value" id="hud-cam-z">5.00</span>
-          </div>
-          <div class="telemetry-row">
-            <span class="label">ROTATION Y:</span>
-            <span class="value" id="hud-rot-y">0.0°</span>
-          </div>
-          <div class="telemetry-row">
-            <span class="label">VIEW MODE:</span>
-            <span class="value" id="hud-mode">OVERVIEW</span>
-          </div>
-          <div class="telemetry-row">
-            <span class="label">MODEL SOURCE:</span>
-            <span class="value" id="hud-model-src">INITIALIZING</span>
-          </div>
-        </div>
 
         <!-- 2D Extracted Coffee Specification Cards List (IndexedDB Powered) -->
         <aside class="extracted-list-panel" id="extracted-list-panel" aria-label="Extracted Coffee Records Feed">

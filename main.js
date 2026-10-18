@@ -1244,18 +1244,29 @@ function setRoastProfile(roastKey) {
     });
   }
 
-  // Update UI spec sheets
-  document.getElementById('origin-tag').textContent = profile.tag;
-  document.getElementById('origin-title').textContent = profile.title;
-  document.getElementById('spec-altitude').textContent = profile.altitude;
-  document.getElementById('spec-process').textContent = profile.process;
-  document.getElementById('spec-varietal').textContent = profile.varietal;
-  document.getElementById('spec-roast').textContent = profile.roast;
-  document.getElementById('macro-density').textContent = profile.density;
-  document.getElementById('macro-temp').textContent = profile.temp;
-  document.getElementById('macro-tds').textContent = profile.tds;
-  document.getElementById('macro-roast-percent').textContent = profile.roastPercent;
-  document.getElementById('macro-progress-indicator').style.width = profile.roastPercent;
+  // Update UI spec sheets if present
+  const originTag = document.getElementById('origin-tag');
+  if (originTag) originTag.textContent = profile.tag;
+  const originTitle = document.getElementById('origin-title');
+  if (originTitle) originTitle.textContent = profile.title;
+  const specAlt = document.getElementById('spec-altitude');
+  if (specAlt) specAlt.textContent = profile.altitude;
+  const specProc = document.getElementById('spec-process');
+  if (specProc) specProc.textContent = profile.process;
+  const specVar = document.getElementById('spec-varietal');
+  if (specVar) specVar.textContent = profile.varietal;
+  const specRoast = document.getElementById('spec-roast');
+  if (specRoast) specRoast.textContent = profile.roast;
+  const macroDensity = document.getElementById('macro-density');
+  if (macroDensity) macroDensity.textContent = profile.density;
+  const macroTemp = document.getElementById('macro-temp');
+  if (macroTemp) macroTemp.textContent = profile.temp;
+  const macroTds = document.getElementById('macro-tds');
+  if (macroTds) macroTds.textContent = profile.tds;
+  const macroRoastPercent = document.getElementById('macro-roast-percent');
+  if (macroRoastPercent) macroRoastPercent.textContent = profile.roastPercent;
+  const macroProgress = document.getElementById('macro-progress-indicator');
+  if (macroProgress) macroProgress.style.width = profile.roastPercent;
 
   // Flavor pills
   const notesContainer = document.getElementById('origin-notes');
