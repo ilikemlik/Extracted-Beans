@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extracted Beans | Single Origin 3D Experience</title>
+  <meta name="description" content="Immersive 3D interactive coffee bean experience powered by Three.js and GSAP. Explore single origin coffee extraction, roast profiles, and cellular bean anatomy.">
+  <meta name="keywords" content="coffee, 3d, threejs, gsap, specialty coffee, artisanal roasting, extraction">
+  <meta name="theme-color" content="#080605">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="assets/logo.jpg">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- ES Module Import Map for Three.js and GSAP -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.160.0",
+      "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/",
+      "gsap": "https://esm.sh/gsap@3.12.5"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- WebGL Three.js Canvas Container -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- Ambient Vignette & Lighting Atmosphere -->
+  <div class="ambient-vignette"></div>
+
+  <!-- UI HUD Overlay (Pointer events pass through to canvas) -->
+  <div class="ui-overlay" id="ui-overlay">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand-wrapper">
+        <div class="brand-emblem" id="brand-logo-btn" title="Extracted Beans Logo">
+          <img src="assets/logo.jpg" alt="Extracted Beans Logo" width="48" height="48">
+        </div>
+        <div class="brand-text">
+          <h1 id="main-title">Extracted Beans</h1>
+          <p id="sub-title">Single Origin // 3D Interactive Lab</p>
+        </div>
+      </div>
+
+      <div class="header-telemetry">
+        <div class="live-badge" id="hud-status-badge">
+          <span class="pulse-dot"></span>
+          <span id="system-status-text">SYSTEM: ONLINE</span>
+        </div>
+        
+        <!-- Web Audio Synthesizer Sound Toggle Button -->
+        <button class="icon-btn interactive-control" id="audio-toggle-btn" title="Toggle Atmospheric Audio" aria-label="Toggle Sound">
+          <svg id="audio-icon-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+            <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+            <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+          <svg id="audio-icon-active" style="display: none;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+        </button>
+
+        <!-- Lighting Mode Toggle -->
+        <button class="icon-btn interactive-control" id="lighting-mode-btn" title="Toggle Lighting Mode" aria-label="Toggle Lighting">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Macro Inspection Detail Card (Reveals upon Zoom In) -->
+    <aside class="macro-panel" id="macro-panel" aria-label="Macro Inspection Panel">
+      <div class="macro-header">
+        <span>Macro Extraction Spec</span>
+        <span class="mode-badge" id="macro-zoom-tag">2.5X ZOOM</span>
+      </div>
+      <div class="macro-stat-row">
+        <span class="label">Cellular Density:</span>
+        <span class="val" id="macro-density">High (SHB 1.34g/cm³)</span>
+      </div>
+      <div class="macro-stat-row">
+        <span class="label">Optimal Extraction:</span>
+        <span class="val" id="macro-temp">93.5°C // 28s</span>
+      </div>
+      <div class="macro-stat-row">
+        <span class="label">Target Yield TDS:</span>
+        <span class="val" id="macro-tds">1.38% (20.5% EY)</span>
+      </div>
+      <div class="macro-stat-row">
+        <span class="label">Maillard Caramelization:</span>
+        <span class="val" id="macro-roast-percent">88%</span>
+      </div>
+      <div class="macro-progress-bar">
+        <div class="macro-progress-fill" id="macro-progress-indicator"></div>
+      </div>
+    </aside>
+
+    <!-- Main Central / Telemetry HUD -->
+    <section class="main-hud">
+      
+      <!-- Left: Origin Details Card -->
+      <article class="origin-card" id="origin-info-card">
+        <span class="card-tag" id="origin-tag">LOT NO. 04 // SPECIAL RESERVE</span>
+        <h2 class="card-title" id="origin-title">Colombian Geisha Natural</h2>
+        
+        <div class="card-notes" id="origin-notes">
+          <span class="flavor-pill">Bergamot</span>
+          <span class="flavor-pill">Jasmine Bloom</span>
+          <span class="flavor-pill">Honey Melon</span>
+          <span class="flavor-pill">Cacao Nib</span>
+        </div>
+
+        <div class="specs-grid">
+          <div class="spec-item">
+            <span class="spec-label">Altitude</span>
+            <span class="spec-val" id="spec-altitude">1,950 MASL</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Process</span>
+            <span class="spec-val" id="spec-process">Anaerobic Slow</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Varietal</span>
+            <span class="spec-val" id="spec-varietal">Geisha T2722</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Roast Level</span>
+            <span class="spec-val" id="spec-roast">Agtron #64 Medium</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Right: Realtime Camera & Rotation Telemetry -->
+      <div class="camera-telemetry">
+        <div class="roast-selector interactive-control" id="roast-selector-bar">
+          <button class="roast-option" data-roast="light" id="btn-roast-light">Light</button>
+          <button class="roast-option active" data-roast="medium" id="btn-roast-medium">Medium</button>
+          <button class="roast-option" data-roast="dark" id="btn-roast-dark">Dark</button>
+          <button class="roast-option" data-roast="gold" id="btn-roast-gold">24K Gold</button>
+        </div>
+
+        <div class="telemetry-box" id="telemetry-box">
+          <div class="telemetry-row">
+            <span class="label">CAMERA Z:</span>
+            <span class="value" id="hud-cam-z">5.00</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="label">ROTATION Y:</span>
+            <span class="value" id="hud-rot-y">0.0°</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="label">VIEW MODE:</span>
+            <span class="value" id="hud-mode">OVERVIEW</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Bottom Action & Instruction Banner -->
+    <footer class="bottom-bar">
+      <div class="click-prompt-pill interactive-control" id="interactive-zoom-trigger" role="button" tabindex="0" aria-label="Click to zoom in and rotate 360 degrees">
+        <div class="prompt-icon-ring">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="11" y1="8" x2="11" y2="14"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+        </div>
+        <div class="prompt-text">
+          <span class="prompt-title" id="prompt-action-text">CLICK ANYWHERE TO ZOOM &amp; ROTATE</span>
+          <span class="prompt-sub" id="prompt-sub-text">2.5s GSAP Synchronized Cinematic Spin</span>
+        </div>
+        <span class="mode-badge" id="prompt-mode-indicator">DEFAULT (Z=5)</span>
+      </div>
+
+      <div class="footer-hint">
+        <span>Click anywhere to toggle 3D camera zoom · Drag to orbit · Press Space to trigger</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Main JavaScript Application -->
+  <script type="module" src="main.js"></script>
+</body>
+</html>
