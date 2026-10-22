@@ -484,48 +484,22 @@ function updateModelSourceTelemetry(text) {
 
 /* ==========================================================================
    Model Scene Preparation & Normalization
-   - Preserves authentic PBR textures & maps for Breville Barista Express
-   - Applies deep matte stealth silhouette shader for Breville Dual Boiler (undiscovered)
+   - Applies deep matte stealth silhouette shader for Breville 3D models
    ========================================================================== */
 function prepareModelScene(importedScene, modelId) {
-  const isSilhouette = (modelId === 'classic');
-
-  // Deep matte silhouette material for undiscovered Breville Dual Boiler (matching screenshot 1)
-  const silhouetteMat = isSilhouette
-    ? new THREE.MeshStandardMaterial({
-      color: 0x141417, // Deep dark matte charcoal
-      roughness: 0.94,
-      metalness: 0.05,
-      flatShading: false
-    })
-    : null;
+  // Deep matte stealth charcoal silhouette material
+  const silhouetteMat = new THREE.MeshStandardMaterial({
+    color: 0x141417, // Deep dark matte charcoal
+    roughness: 0.92,
+    metalness: 0.08,
+    flatShading: false
+  });
 
   importedScene.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true;
       child.receiveShadow = true;
-
-      if (isSilhouette) {
-        child.material = silhouetteMat.clone();
-      } else {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((mat) => {
-          if (mat) {
-            mat.needsUpdate = true;
-            // Ensure color textures are sRGB
-            if (mat.map) {
-              mat.map.colorSpace = THREE.SRGBColorSpace;
-            }
-            if (mat.emissiveMap) {
-              mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
-            }
-            // Enable realistic envMap reflections on metallic / glossy surfaces
-            if ('envMapIntensity' in mat) {
-              mat.envMapIntensity = 1.2;
-            }
-          }
-        });
-      }
+      child.material = silhouetteMat.clone();
     }
   });
 }

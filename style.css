@@ -2028,7 +2028,7 @@ a,
   pointer-events: none;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.95) 0%, rgba(249, 248, 246, 0.98) 75%);
+  background: var(--palette-cream);
 }
 
 .mobile-showcase-stage {
