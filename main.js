@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { gsap } from 'gsap';
-import { getAllExtractions, addExtractionRecord, getExtractionCount } from './db.js';
+import { getAllExtractions, addExtractionRecord, updateExtractionRecord, deleteExtractionRecord, getExtractionCount } from './db.js';
 
 /* ==========================================================================
    EXTRACTED BEANS - 3D INTERACTIVE EXPERIENCE
@@ -14,7 +14,6 @@ import { getAllExtractions, addExtractionRecord, getExtractionCount } from './db
 let isZoomed = false;
 let isExtractedView = false;
 let activeExtractionId = null;
-let currentFilter = 'all';
 const animationDuration = 2.5; // Seconds per cycle
 
 // Default camera positions
@@ -24,6 +23,7 @@ const GROUND_Y = -1.0; // Precise ground level for level seating
 
 // Scene Core Variables
 let scene, camera, renderer, model, beanGroup, groundMesh, shadowMesh;
+let undiscoveredTextRing = null;
 let keyLight, fillLight, rimLight, ambientLight, hemisphereLight, frontLight;
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
@@ -303,10 +303,10 @@ const MODELS_CONFIG = {
   },
   classic: {
     id: 'classic',
-    name: 'Classic Espresso Machine',
+    name: 'Breville Dual Boiler',
     path: 'assets/coffee_bean.glb',
-    telemetryName: 'CLASSIC ESPRESSO MACHINE',
-    description: 'Classic Commercial Espresso Machine'
+    telemetryName: 'BREVILLE DUAL BOILER',
+    description: 'Dual Boiler Specialty Espresso Machine'
   }
 };
 
@@ -355,33 +355,133 @@ function updateModelSourceTelemetry(text) {
 
 /* ==========================================================================
    Model Scene Preparation & Normalization
-   Preserves authentic PBR textures, materials, and maps from the GLB files
+   - Preserves authentic PBR textures & maps for Breville Barista Express
+   - Applies deep matte stealth silhouette shader for Breville Dual Boiler (undiscovered)
    ========================================================================== */
-function prepareModelScene(importedScene) {
+function prepareModelScene(importedScene, modelId) {
+  const isSilhouette = (modelId === 'classic');
+
+  // Deep matte silhouette material for undiscovered Breville Dual Boiler (matching screenshot 1)
+  const silhouetteMat = isSilhouette
+    ? new THREE.MeshStandardMaterial({
+        color: 0x141417, // Deep dark matte charcoal
+        roughness: 0.94,
+        metalness: 0.05,
+        flatShading: false
+      })
+    : null;
+
   importedScene.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true;
       child.receiveShadow = true;
 
-      const mats = Array.isArray(child.material) ? child.material : [child.material];
-      mats.forEach((mat) => {
-        if (mat) {
-          mat.needsUpdate = true;
-          // Ensure color textures are sRGB
-          if (mat.map) {
-            mat.map.colorSpace = THREE.SRGBColorSpace;
+      if (isSilhouette) {
+        child.material = silhouetteMat.clone();
+      } else {
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach((mat) => {
+          if (mat) {
+            mat.needsUpdate = true;
+            // Ensure color textures are sRGB
+            if (mat.map) {
+              mat.map.colorSpace = THREE.SRGBColorSpace;
+            }
+            if (mat.emissiveMap) {
+              mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+            }
+            // Enable realistic envMap reflections on metallic / glossy surfaces
+            if ('envMapIntensity' in mat) {
+              mat.envMapIntensity = 1.2;
+            }
           }
-          if (mat.emissiveMap) {
-            mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
-          }
-          // Enable realistic envMap reflections on metallic / glossy surfaces
-          if ('envMapIntensity' in mat) {
-            mat.envMapIntensity = 1.2;
-          }
-        }
-      });
+        });
+      }
     }
   });
+}
+
+/* ==========================================================================
+   3D Rotating Text Ring Ribbon ("COFFEE EXTRACTION INFORMATION UNDISCOVERED")
+   - High resolution double-sided transparent cylindrical ribbon
+   - Continuous 360-degree rotation around the machine's midsection
+   ========================================================================== */
+function createUndiscoveredTextRing() {
+  if (undiscoveredTextRing) return undiscoveredTextRing;
+
+  // 1. Render high-resolution text onto dynamic canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = 2048;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Bold geometric typography matching modern UI
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '900 58px "Space Grotesk", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Repeated phrase around cylinder circumference
+  const phrase = "UNDISCOVERED  •  COFFEE EXTRACTION INFORMATION  •  UNDISCOVERED  •  COFFEE EXTRACTION INFORMATION  •  ";
+  ctx.fillText(phrase, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.anisotropy = 8;
+  texture.needsUpdate = true;
+
+  // 2. Open-ended cylinder geometry hovering around waist of machine
+  const geometry = new THREE.CylinderGeometry(1.48, 1.48, 0.40, 64, 1, true);
+
+  // DoubleSide is essential so the inside/rear letters show through mirrored, exactly like screenshot 2
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    opacity: 0.95,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+
+  undiscoveredTextRing = new THREE.Mesh(geometry, material);
+  undiscoveredTextRing.name = 'undiscoveredTextRing';
+  undiscoveredTextRing.position.set(0, 0.15, 0);
+  undiscoveredTextRing.visible = false;
+
+  return undiscoveredTextRing;
+}
+
+function updateUndiscoveredRingVisibility(targetModelId) {
+  if (!undiscoveredTextRing) {
+    createUndiscoveredTextRing();
+  }
+
+  if (beanGroup && !beanGroup.children.includes(undiscoveredTextRing)) {
+    beanGroup.add(undiscoveredTextRing);
+  }
+
+  if (targetModelId === 'classic') {
+    undiscoveredTextRing.visible = true;
+    undiscoveredTextRing.material.opacity = 0;
+    gsap.to(undiscoveredTextRing.material, {
+      opacity: 0.95,
+      duration: 0.7,
+      ease: "power2.out"
+    });
+  } else {
+    gsap.to(undiscoveredTextRing.material, {
+      opacity: 0,
+      duration: 0.35,
+      ease: "power2.in",
+      onComplete: () => {
+        if (currentModelId !== 'classic' && undiscoveredTextRing) {
+          undiscoveredTextRing.visible = false;
+        }
+      }
+    });
+  }
 }
 
 function createNormalizedModelPivot(importedScene) {
@@ -465,6 +565,7 @@ function loadModel(modelId) {
   if (modelCache.has(modelId)) {
     const cachedPivot = modelCache.get(modelId);
     replaceActiveModel(cachedPivot, config);
+    updateUndiscoveredRingVisibility(modelId);
     updateModelSourceTelemetry(config.telemetryName);
     finishLoaderUI(true, `${config.name} Ready`);
     return;
@@ -499,14 +600,15 @@ function loadModel(modelId) {
       console.log('Successfully loaded 3D GLB model:', config.path);
       const importedScene = gltf.scene;
 
-      // Preserve authentic materials and setup shadows
-      prepareModelScene(importedScene);
+      // Preserve authentic materials and setup shadows (or deep matte silhouette for Dual Boiler)
+      prepareModelScene(importedScene, modelId);
       const pivot = createNormalizedModelPivot(importedScene);
 
       // Cache normalized model in memory
       modelCache.set(modelId, pivot);
 
       replaceActiveModel(pivot, config);
+      updateUndiscoveredRingVisibility(modelId);
       modelSource = `GLB (${config.path})`;
       updateModelSourceTelemetry(config.telemetryName);
       finishLoaderUI(true, `${config.name} Loaded`);
@@ -583,6 +685,11 @@ function switchModel(targetModelId) {
   }
 
   loadModel(targetModelId);
+
+  // If extraction view is active, update recipe feed state
+  if (isExtractedView) {
+    renderExtractionFeed();
+  }
 }
 
 /* ==========================================================================
@@ -977,23 +1084,107 @@ function updateTelemetry() {
    - Synchronously moves ground shadow beneath the bean
    - 2D Frosted Specification Card fades & slides in on the right
    ========================================================================== */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 /* ==========================================================================
    2D Extracted Coffee Cards Feed (IndexedDB Powered)
    - Queries IndexedDB database for coffee extractions
-   - Dynamically renders interactive 2D cards with 3 quick metrics
-   - Clicking any card morphs the 3D bean to match that roast profile
+   - Dynamically renders interactive 2D cards with Breville 1-12 grind & specs
+   - Supports inline Edit and Delete operations with IndexedDB synchronization
    ========================================================================== */
-async function renderExtractionFeed(filterRoast = currentFilter) {
+async function renderExtractionFeed() {
   const container = document.getElementById('extracted-cards-container');
   const countBadge = document.getElementById('db-counter-badge');
   if (!container) return;
 
   try {
-    const extractions = await getAllExtractions(filterRoast);
-    const totalCount = await getExtractionCount();
+    if (currentModelId === 'classic') {
+      if (countBadge) {
+        countBadge.textContent = 'DIAL-IN PENDING';
+      }
+      container.innerHTML = `
+        <article class="extracted-item-card is-active undiscovered-machine-card">
+          <div class="card-top-bar">
+            <div class="card-active-indicator" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">
+              <span class="active-pulse-dot" style="background: #fbbf24;"></span>
+              <span>DIAL-IN IN PROGRESS</span>
+            </div>
+            <span class="model-badge" style="background: rgba(255,255,255,0.08); font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.08em; color: var(--text-muted);">BREVILLE DUAL BOILER</span>
+          </div>
+          
+          <div class="undiscovered-card-body" style="text-align: center; padding: 22px 12px 18px 12px;">
+            <div class="undiscovered-lock-circle">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #fbbf24;">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <h3 class="undiscovered-card-title">COFFEE EXTRACTION UNDISCOVERED</h3>
+            <p class="undiscovered-card-desc">
+              Extraction parameters, grind micron calibration, and pressure profiling for the Breville Dual Boiler have not yet been discovered.
+            </p>
+          </div>
+
+          <div class="card-specs-grid" style="opacity: 0.45; filter: blur(0.4px); pointer-events: none; margin-bottom: 20px;">
+            <div class="spec-cell">
+              <span class="spec-label">GRIND SIZE</span>
+              <span class="spec-val">-- [LOCKED]</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">GROUND DOSE</span>
+              <span class="spec-val">--.-g</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">LIQUID YIELD</span>
+              <span class="spec-val">--.-g</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">PULL TIME</span>
+              <span class="spec-val">--s</span>
+            </div>
+          </div>
+
+          <div style="text-align: center;">
+            <button class="action-pill-btn interactive-control" id="btn-seed-dual-boiler" style="width: 100%; justify-content: center; padding: 12px; font-weight: 600; font-size: 0.78rem;">
+              + Log First Dual Boiler Dial-in Record
+            </button>
+          </div>
+        </article>
+      `;
+      const seedBtn = document.getElementById('btn-seed-dual-boiler');
+      if (seedBtn) {
+        seedBtn.addEventListener('click', () => {
+          openLogModal({
+            roaster: 'Breville Dual Boiler Calibration',
+            beanName: 'Dial-in Calibration #1',
+            origin: 'First Extraction Test',
+            process: 'Washed',
+            roastLevel: 'Medium',
+            grindSize: 14,
+            dose: 19.0,
+            yield: 38.0,
+            time: 28,
+            rating: 4,
+            notes: ['Dial-in in Progress', 'First Calibration'],
+            additionalNotes: 'Initial dial-in calibration record for Breville Dual Boiler.'
+          });
+        });
+      }
+      return;
+    }
+
+    const extractions = await getAllExtractions();
 
     if (countBadge) {
-      countBadge.textContent = `${extractions.length} / ${totalCount} RECIPES`;
+      countBadge.textContent = `${extractions.length} RECIPES`;
     }
 
     container.innerHTML = '';
@@ -1001,12 +1192,12 @@ async function renderExtractionFeed(filterRoast = currentFilter) {
     if (extractions.length === 0) {
       container.innerHTML = `
         <div class="empty-feed-notice" style="text-align: center; padding: 48px 20px; color: var(--text-muted); font-family: var(--font-mono); font-size: 0.8rem;">
-          <p>No extraction records found for this roast style.</p>
+          <p>No extraction records found in database.</p>
           <button class="action-pill-btn interactive-control" id="btn-seed-empty" style="margin: 14px auto 0 auto;">+ Log A New Recipe</button>
         </div>
       `;
       const seedBtn = document.getElementById('btn-seed-empty');
-      if (seedBtn) seedBtn.addEventListener('click', openLogModal);
+      if (seedBtn) seedBtn.addEventListener('click', () => openLogModal(null));
       return;
     }
 
@@ -1015,7 +1206,6 @@ async function renderExtractionFeed(filterRoast = currentFilter) {
       const card = document.createElement('article');
       card.className = 'extracted-item-card interactive-control';
       card.dataset.id = item.id;
-      card.dataset.roast = item.roast;
 
       const isActive = activeExtractionId ? (item.id === activeExtractionId) : (index === 0);
       if (isActive) {
@@ -1023,70 +1213,111 @@ async function renderExtractionFeed(filterRoast = currentFilter) {
         if (!activeExtractionId) activeExtractionId = item.id;
       }
 
-      const notesHtml = (item.notes || []).map(note => `<span class="item-note-pill">${note}</span>`).join('');
+      const notesHtml = (item.notes || []).map(note => `<span class="item-note-pill">${escapeHtml(note)}</span>`).join('');
+      const additionalNotesHtml = item.additionalNotes
+        ? `<p class="item-additional-notes">${escapeHtml(item.additionalNotes)}</p>`
+        : '';
 
       card.innerHTML = `
-        <div class="card-active-indicator">
-          <span class="active-pulse-dot"></span>
-          <span>SYNCED 3D</span>
+        <div class="card-top-bar">
+          <div class="card-active-indicator">
+            <span class="active-pulse-dot"></span>
+            <span>ACTIVE</span>
+          </div>
+          <div class="card-action-btns">
+            <button class="card-action-btn btn-edit-recipe interactive-control" title="Edit Recipe" aria-label="Edit Recipe">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <span>Edit</span>
+            </button>
+            <button class="card-action-btn btn-delete-recipe interactive-control" title="Delete Recipe" aria-label="Delete Recipe">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- Left Column: Brand Visual Badge & Origin -->
         <div class="item-card-left">
           <div class="item-brand-visual">
-            <img class="item-brand-img" src="${item.imageSrc || 'assets/logo.jpg'}" alt="${item.brandName}" onerror="this.src='assets/logo.jpg'">
+            <img class="item-brand-img" src="${item.imageSrc || 'assets/logo.jpg'}" alt="${escapeHtml(item.brandName)}" onerror="this.src='assets/logo.jpg'">
           </div>
-          <span class="item-origin-meta">${item.originRegion || 'Single Origin'}</span>
+          <span class="item-origin-meta">${escapeHtml(item.originRegion || 'Single Origin')}</span>
         </div>
 
-        <!-- Right Column: Brand Name & 3 Quick Key Metrics -->
+        <!-- Right Column: Brand Name & Key Metrics -->
         <div class="item-card-right">
           <div class="item-card-heading">
-            <h3 class="item-brand-title">${item.brandName}</h3>
-            <p class="item-roast-edition">${item.roastEdition}</p>
+            <h3 class="item-brand-title">${escapeHtml(item.brandName)}</h3>
+            <p class="item-roast-edition">${escapeHtml(item.roastEdition)}</p>
           </div>
 
-          <!-- The 3 Quick Information Items -->
+          <!-- The Key Information Items -->
           <div class="item-metrics-grid">
             <div class="item-metric-row">
-              <span class="metric-label-mini">1. Grind Size</span>
-              <span class="metric-val-bold">${item.grindSize}</span>
+              <span class="metric-label-mini">1. Grind Setting</span>
+              <span class="metric-val-bold">Setting ${item.grindSize || '5'}</span>
             </div>
             <div class="item-metric-row gold-tint">
               <span class="metric-label-mini">2. Ground Dose</span>
-              <span class="metric-val-bold gold">${item.grindAmount}</span>
+              <span class="metric-val-bold gold">${escapeHtml(item.grindAmount || '18.0 g')}</span>
             </div>
             <div class="item-metric-row gold-tint">
               <span class="metric-label-mini">3. Liquid Yield</span>
-              <span class="metric-val-bold gold">${item.extractedWeight}</span>
+              <span class="metric-val-bold gold">${escapeHtml(item.extractedWeight || '36.0 g')}</span>
             </div>
           </div>
 
           <div class="item-telemetry-strip">
-            <span class="item-tel-pill">TIME: ${item.brewTime || '28s'}</span>
-            <span class="item-tel-pill">TEMP: ${item.brewTemp || '93.5°C'}</span>
-            <span class="item-tel-pill">RATIO: ${item.ratio || '1:2.0'}</span>
-            <span class="item-tel-pill">TDS: ${item.tds || '1.38%'}</span>
+            <span class="item-tel-pill">TIME: ${escapeHtml(item.brewTime || '28s')}</span>
+            <span class="item-tel-pill">TEMP: ${escapeHtml(item.brewTemp || '93.5°C')}</span>
+            <span class="item-tel-pill">RATIO: ${escapeHtml(item.ratio || '1:2.0')}</span>
           </div>
 
           <div class="item-notes-row">
             ${notesHtml}
           </div>
+
+          ${additionalNotesHtml}
         </div>
       `;
 
-      // Interactive Click: Syncs card highlight and 3D bean material finish!
+      // Interactive Click on card: Highlight active card
       card.addEventListener('click', (e) => {
         e.stopPropagation();
         document.querySelectorAll('.extracted-item-card').forEach(c => c.classList.remove('is-active'));
         card.classList.add('is-active');
         activeExtractionId = item.id;
-
-        // Synchronize 3D bean model finish
-        if (item.roast) {
-          setRoastProfile(item.roast);
-        }
       });
+
+      // Edit Button Click
+      const btnEdit = card.querySelector('.btn-edit-recipe');
+      if (btnEdit) {
+        btnEdit.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openLogModal(item);
+        });
+      }
+
+      // Delete Button Click
+      const btnDelete = card.querySelector('.btn-delete-recipe');
+      if (btnDelete) {
+        btnDelete.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const confirmed = window.confirm(`Delete recipe for "${item.brandName} - ${item.roastEdition}"?`);
+          if (confirmed) {
+            await deleteExtractionRecord(item.id);
+            if (activeExtractionId === item.id) {
+              activeExtractionId = null;
+            }
+            await renderExtractionFeed();
+          }
+        });
+      }
 
       container.appendChild(card);
     });
@@ -1096,12 +1327,113 @@ async function renderExtractionFeed(filterRoast = currentFilter) {
   }
 }
 
-function openLogModal() {
+function openLogModal(itemToEdit = null) {
   const modal = document.getElementById('modal-log-extraction');
-  if (modal) {
-    modal.classList.add('active');
-    modal.setAttribute('aria-hidden', 'false');
+  const modalTag = document.getElementById('modal-tag');
+  const modalTitle = document.getElementById('modal-log-title');
+  const btnSaveText = document.getElementById('btn-save-text');
+  const formLog = document.getElementById('form-log-extraction');
+  const advSection = document.getElementById('advanced-fields-section');
+  const btnToggleAdv = document.getElementById('btn-toggle-advanced');
+
+  if (!modal) return;
+
+  // Always start with advanced section collapsed
+  if (advSection) advSection.classList.add('is-collapsed');
+  if (btnToggleAdv) {
+    btnToggleAdv.classList.remove('is-open');
+    btnToggleAdv.setAttribute('aria-expanded', 'false');
   }
+
+  if (itemToEdit) {
+    // Edit mode
+    if (modalTag) modalTag.textContent = 'INDEXEDDB RECIPE EDITOR';
+    if (modalTitle) modalTitle.textContent = 'Edit Coffee Extraction';
+    if (btnSaveText) btnSaveText.textContent = 'Update Recipe';
+
+    const inputEditId = document.getElementById('input-edit-id');
+    if (inputEditId) inputEditId.value = itemToEdit.id || '';
+
+    const inputBrand = document.getElementById('input-brand');
+    if (inputBrand) inputBrand.value = itemToEdit.brandName || '';
+
+    const inputEdition = document.getElementById('input-edition');
+    if (inputEdition) inputEdition.value = itemToEdit.roastEdition || '';
+
+    const inputOrigin = document.getElementById('input-origin');
+    if (inputOrigin) inputOrigin.value = itemToEdit.originRegion || '';
+
+    // Grind size Breville 1-12
+    const grindSelect = document.getElementById('select-grind');
+    if (grindSelect) {
+      const numericVal = parseInt(itemToEdit.grindSize, 10);
+      if (!isNaN(numericVal) && numericVal >= 1 && numericVal <= 12) {
+        grindSelect.value = String(numericVal);
+      } else {
+        grindSelect.value = '5';
+      }
+    }
+
+    const inputDose = document.getElementById('input-dose');
+    if (inputDose) inputDose.value = itemToEdit.grindAmount || '18.0 g';
+
+    const inputYield = document.getElementById('input-yield');
+    if (inputYield) inputYield.value = itemToEdit.extractedWeight || '36.0 g';
+
+    const inputTime = document.getElementById('input-time');
+    if (inputTime) inputTime.value = itemToEdit.brewTime || '28s';
+
+    const inputTemp = document.getElementById('input-temp');
+    if (inputTemp) inputTemp.value = itemToEdit.brewTemp || '93.5°C';
+
+    const inputNotes = document.getElementById('input-notes');
+    if (inputNotes) inputNotes.value = (itemToEdit.notes || []).join(', ');
+
+    const inputAdditionalNotes = document.getElementById('input-additional-notes');
+    if (inputAdditionalNotes) inputAdditionalNotes.value = itemToEdit.additionalNotes || '';
+  } else {
+    // New Log mode
+    if (modalTag) modalTag.textContent = 'INDEXEDDB LOGGING ENGINE';
+    if (modalTitle) modalTitle.textContent = 'Log Coffee Extraction';
+    if (btnSaveText) btnSaveText.textContent = 'Save to Database';
+
+    if (formLog) formLog.reset();
+    const inputEditId = document.getElementById('input-edit-id');
+    if (inputEditId) inputEditId.value = '';
+
+    const inputBrand = document.getElementById('input-brand');
+    if (inputBrand) inputBrand.value = '';
+
+    const inputEdition = document.getElementById('input-edition');
+    if (inputEdition) inputEdition.value = '';
+
+    const inputOrigin = document.getElementById('input-origin');
+    if (inputOrigin) inputOrigin.value = '';
+
+    const grindSelect = document.getElementById('select-grind');
+    if (grindSelect) grindSelect.value = '5';
+
+    const inputDose = document.getElementById('input-dose');
+    if (inputDose) inputDose.value = '18.0 g';
+
+    const inputYield = document.getElementById('input-yield');
+    if (inputYield) inputYield.value = '36.0 g';
+
+    const inputTime = document.getElementById('input-time');
+    if (inputTime) inputTime.value = '28s';
+
+    const inputTemp = document.getElementById('input-temp');
+    if (inputTemp) inputTemp.value = '93.5°C';
+
+    const inputNotes = document.getElementById('input-notes');
+    if (inputNotes) inputNotes.value = '';
+
+    const inputAdditionalNotes = document.getElementById('input-additional-notes');
+    if (inputAdditionalNotes) inputAdditionalNotes.value = '';
+  }
+
+  modal.classList.add('active');
+  modal.setAttribute('aria-hidden', 'false');
 }
 
 function closeLogModal() {
@@ -1141,7 +1473,7 @@ async function toggleExtractedView(forceState) {
 
   if (shouldOpen) {
     // 1. Refresh extraction data feed from IndexedDB
-    await renderExtractionFeed(currentFilter);
+    await renderExtractionFeed();
 
     // 2. Choreograph 3D Bean: Pan Left, Zoom Out, Spin 360
     const targetX = isMobile ? 0.0 : -1.45;
@@ -1558,23 +1890,31 @@ function setupInteractivity() {
     });
   }
 
-  // Filter Chips in Extraction List Header
-  document.querySelectorAll('.filter-chip').forEach(chip => {
-    chip.addEventListener('click', (e) => {
+  // Advanced Settings Toggle in Modal
+  const btnToggleAdv = document.getElementById('btn-toggle-advanced');
+  const advSection = document.getElementById('advanced-fields-section');
+  if (btnToggleAdv && advSection) {
+    btnToggleAdv.addEventListener('click', (e) => {
       e.stopPropagation();
-      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      currentFilter = chip.dataset.filter || 'all';
-      renderExtractionFeed(currentFilter);
+      const isCollapsed = advSection.classList.contains('is-collapsed');
+      if (isCollapsed) {
+        advSection.classList.remove('is-collapsed');
+        btnToggleAdv.classList.add('is-open');
+        btnToggleAdv.setAttribute('aria-expanded', 'true');
+      } else {
+        advSection.classList.add('is-collapsed');
+        btnToggleAdv.classList.remove('is-open');
+        btnToggleAdv.setAttribute('aria-expanded', 'false');
+      }
     });
-  });
+  }
 
   // Modal Dialog Controls: Open, Close & Backdrop Click
   const btnOpenModal = document.getElementById('btn-open-log-modal');
   if (btnOpenModal) {
     btnOpenModal.addEventListener('click', (e) => {
       e.stopPropagation();
-      openLogModal();
+      openLogModal(null);
     });
   }
 
@@ -1603,21 +1943,20 @@ function setupInteractivity() {
     });
   }
 
-  // Log Extraction Form Submission (IndexedDB Write)
+  // Log / Edit Extraction Form Submission (IndexedDB Write)
   const formLog = document.getElementById('form-log-extraction');
   if (formLog) {
     formLog.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const editId = document.getElementById('input-edit-id')?.value;
       const brand = document.getElementById('input-brand').value.trim();
       const edition = document.getElementById('input-edition').value.trim();
-      const origin = document.getElementById('input-origin').value.trim() || 'Custom Micro-lot';
-      const roast = document.getElementById('select-roast').value;
-      const grind = document.getElementById('input-grind').value.trim();
-      const dose = document.getElementById('input-dose').value.trim();
-      const yieldWeight = document.getElementById('input-yield').value.trim();
-      const time = document.getElementById('input-time').value.trim() || '28s';
-      const temp = document.getElementById('input-temp').value.trim() || '93.5°C';
-      const tds = document.getElementById('input-tds').value.trim() || '1.38%';
+      const origin = document.getElementById('input-origin').value.trim() || 'Single Origin';
+      const grind = document.getElementById('select-grind')?.value || '5';
+      const dose = document.getElementById('input-dose')?.value.trim() || '18.0 g';
+      const yieldWeight = document.getElementById('input-yield')?.value.trim() || '36.0 g';
+      const time = document.getElementById('input-time')?.value.trim() || '28s';
+      const temp = document.getElementById('input-temp')?.value.trim() || '93.5°C';
 
       // Calculate brewing ratio if numeric dose and yield
       const numDose = parseFloat(dose);
@@ -1631,13 +1970,14 @@ function setupInteractivity() {
         ? notesRaw.split(',').map(s => s.trim()).filter(Boolean)
         : ['Craft Specialty', 'Balanced Extraction'];
 
-      const newRecord = {
-        roast,
+      const additionalNotes = document.getElementById('input-additional-notes')?.value.trim() || '';
+
+      const recordData = {
         brandName: brand,
         roastEdition: edition,
         originRegion: origin,
         grindSize: grind,
-        grindDetail: 'Custom Dial-In',
+        grindDetail: `Dial Setting ${grind} · Breville Conical`,
         grindAmount: dose,
         doseDetail: `Dry Ground Dose (${dose} in)`,
         extractedWeight: yieldWeight,
@@ -1645,22 +1985,34 @@ function setupInteractivity() {
         brewTime: time,
         brewTemp: temp,
         ratio: ratio,
-        tds: tds,
         notes: notes,
+        additionalNotes: additionalNotes,
         timestamp: Date.now()
       };
 
       try {
-        const newId = await addExtractionRecord(newRecord);
-        activeExtractionId = newId;
+        if (editId) {
+          const numericId = Number(editId);
+          // Preserve existing imageSrc if available
+          const existingList = await getAllExtractions();
+          const existingRecord = existingList.find(x => x.id === numericId);
+          if (existingRecord && existingRecord.imageSrc) {
+            recordData.imageSrc = existingRecord.imageSrc;
+          }
+          await updateExtractionRecord({ id: numericId, ...recordData });
+          activeExtractionId = numericId;
+        } else {
+          const newId = await addExtractionRecord(recordData);
+          activeExtractionId = newId;
+        }
+
         formLog.reset();
         closeLogModal();
 
-        // Refresh feed and update active 3D bean roast
-        await renderExtractionFeed(currentFilter);
-        setRoastProfile(roast);
+        // Refresh feed
+        await renderExtractionFeed();
 
-        // Make sure extracted view is open so user sees their new recipe
+        // Make sure extracted view is open so user sees their updated or new recipe
         if (!isExtractedView) {
           toggleExtractedView(true);
         }
@@ -1815,6 +2167,11 @@ function animate(time) {
 
     model.rotation.y = THREE.MathUtils.lerp(model.rotation.y, targetRotY, isDragging ? 0.22 : 0.08);
     model.rotation.x = THREE.MathUtils.lerp(model.rotation.x, targetRotX, isDragging ? 0.22 : 0.08);
+  }
+
+  // Continuous smooth 3D rotation for undiscovered text ribbon
+  if (undiscoveredTextRing && undiscoveredTextRing.visible) {
+    undiscoveredTextRing.rotation.y -= 0.0065;
   }
 
   // Update HUD

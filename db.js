@@ -4,19 +4,18 @@
    ========================================================================== */
 
 const DB_NAME = 'ExtractedBeansDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NAME = 'extractions';
 
-// Default Seed Data: 6 Curated Specialty Coffee Extractions
+// Default Seed Data: Curated Specialty Coffee Extractions with Breville 1-12 Dial settings
 export const DEFAULT_EXTRACTIONS = [
   {
-    roast: 'silver',
     brandName: 'Onyx Coffee Lab',
-    roastEdition: 'Monarch Studio Chrome Edition',
+    roastEdition: 'Monarch Reserve Blend',
     originRegion: 'Tolima & Huila, Colombia',
     imageSrc: 'assets/brands/onyx.svg',
-    grindSize: 'Medium-Fine (580 µm)',
-    grindDetail: '24 Clicks · Precision Conical',
+    grindSize: '5',
+    grindDetail: 'Dial Setting 5 · Precision Conical',
     grindAmount: '18.0 g',
     doseDetail: 'Dry Ground Dose (18g in)',
     extractedWeight: '36.0 g',
@@ -24,37 +23,35 @@ export const DEFAULT_EXTRACTIONS = [
     brewTime: '27s',
     brewTemp: '93.5°C',
     ratio: '1:2.0',
-    tds: '1.38%',
     notes: ['Dark Chocolate', 'Caramelized Sugar', 'Black Cherry'],
+    additionalNotes: 'Balanced sweet syrupy body, ideal for morning flat white or double shot.',
     timestamp: Date.now() - 500000
   },
   {
-    roast: 'platinum',
     brandName: 'Sey Coffee',
-    roastEdition: 'El Paraiso Platinum Reserve',
+    roastEdition: 'El Paraiso Special Reserve',
     originRegion: 'Cauca, Colombia · Thermal Shock',
     imageSrc: 'assets/brands/sey.svg',
-    grindSize: 'Fine-Medium (520 µm)',
-    grindDetail: '21 Clicks · Micro Burr',
-    grindAmount: '19.5 g',
+    grindSize: '4',
+    grindDetail: 'Dial Setting 4 · Micro Burr',
+    grindAmount: '18.0 g',
     doseDetail: 'High-Density Light Roast Dose',
-    extractedWeight: '42.0 g',
-    yieldDetail: 'High-Extraction Yield (1:2.15)',
+    extractedWeight: '38.0 g',
+    yieldDetail: 'High-Extraction Yield (1:2.11)',
     brewTime: '30s',
     brewTemp: '94.0°C',
-    ratio: '1:2.15',
-    tds: '1.42%',
+    ratio: '1:2.11',
     notes: ['Red Currant', 'Bergamot', 'Jasmine Florals'],
+    additionalNotes: 'Extended 7s pre-infusion highlights bright bergamot acidity and crisp finish.',
     timestamp: Date.now() - 400000
   },
   {
-    roast: 'titanium',
     brandName: 'Square Mile Coffee',
-    roastEdition: 'Red Brick Titanium Series',
+    roastEdition: 'Red Brick Espresso Series',
     originRegion: 'East Africa & Central America',
     imageSrc: 'assets/brands/squaremile.svg',
-    grindSize: 'Medium (620 µm)',
-    grindDetail: '26 Clicks · Flat Steel',
+    grindSize: '6',
+    grindDetail: 'Dial Setting 6 · Flat Steel',
     grindAmount: '18.5 g',
     doseDetail: 'Classic Balanced Dose (18.5g in)',
     extractedWeight: '37.0 g',
@@ -62,37 +59,35 @@ export const DEFAULT_EXTRACTIONS = [
     brewTime: '28s',
     brewTemp: '93.0°C',
     ratio: '1:2.0',
-    tds: '1.35%',
     notes: ['Toffee Crisp', 'Milk Chocolate', 'Red Apple'],
+    additionalNotes: 'Velvety crema texture with pronounced milk chocolate undertones.',
     timestamp: Date.now() - 300000
   },
   {
-    roast: 'gold',
     brandName: 'Hacienda La Esmeralda',
-    roastEdition: 'Geisha 24K Reserve Special',
+    roastEdition: 'Geisha Special Reserve',
     originRegion: 'Boquete, Panama · 1,800m',
     imageSrc: 'assets/brands/esmeralda.svg',
-    grindSize: 'Fine-Filter (480 µm)',
-    grindDetail: '18 Clicks · Titanium Burrs',
-    grindAmount: '20.0 g',
+    grindSize: '3',
+    grindDetail: 'Dial Setting 3 · Fine Dial',
+    grindAmount: '18.0 g',
     doseDetail: 'Rare Varietal Geisha Dose',
-    extractedWeight: '45.0 g',
-    yieldDetail: 'High Clarity Nectar (1:2.25)',
+    extractedWeight: '40.0 g',
+    yieldDetail: 'High Clarity Nectar (1:2.22)',
     brewTime: '32s',
     brewTemp: '95.0°C',
-    ratio: '1:2.25',
-    tds: '1.45%',
+    ratio: '1:2.22',
     notes: ['White Peach', 'Orange Blossom', 'Raw Honey'],
+    additionalNotes: 'High floral clarity. Recommended to drink black to preserve delicate honey notes.',
     timestamp: Date.now() - 200000
   },
   {
-    roast: 'silver',
     brandName: 'Blue Bottle Coffee',
-    roastEdition: 'Bella Donovan Chrome Edition',
+    roastEdition: 'Bella Donovan Blend',
     originRegion: 'Ethiopia & Sumatra Blend',
     imageSrc: 'assets/brands/bluebottle.svg',
-    grindSize: 'Medium-Coarse (650 µm)',
-    grindDetail: '27 Clicks · Conical Burr',
+    grindSize: '7',
+    grindDetail: 'Dial Setting 7 · Conical Burr',
     grindAmount: '19.0 g',
     doseDetail: 'Mellow Rich Dose (19g in)',
     extractedWeight: '38.0 g',
@@ -100,46 +95,44 @@ export const DEFAULT_EXTRACTIONS = [
     brewTime: '29s',
     brewTemp: '92.5°C',
     ratio: '1:2.0',
-    tds: '1.34%',
     notes: ['Raspberry', 'Dark Chocolate', 'Molasses'],
+    additionalNotes: 'Deep, comforting finish with molasses richness.',
     timestamp: Date.now() - 100000
   },
   {
-    roast: 'platinum',
     brandName: 'Tim Wendelboe',
     roastEdition: 'Caballero Geisha Washed',
     originRegion: 'Marcala, Honduras · 1,600m',
     imageSrc: 'assets/brands/timwendelboe.svg',
-    grindSize: 'Fine-Medium (510 µm)',
-    grindDetail: '20 Clicks · Nordic Precision',
-    grindAmount: '18.2 g',
+    grindSize: '4',
+    grindDetail: 'Dial Setting 4 · Nordic Precision',
+    grindAmount: '18.0 g',
     doseDetail: 'Ultra-Dense High Altitude',
-    extractedWeight: '40.0 g',
-    yieldDetail: 'Crisp Phosphoric Yield (1:2.2)',
+    extractedWeight: '36.0 g',
+    yieldDetail: 'Crisp Phosphoric Yield (1:2.0)',
     brewTime: '31s',
     brewTemp: '94.5°C',
-    ratio: '1:2.2',
-    tds: '1.40%',
+    ratio: '1:2.0',
     notes: ['Floral Jasmine', 'Apricot', 'Meyer Lemon'],
+    additionalNotes: 'Clean, tea-like mouthfeel with vibrant apricot finish.',
     timestamp: Date.now() - 50000
   },
   {
-    roast: 'titanium',
     brandName: 'Coffee.',
     roastEdition: 'Medium Roast · 100% Australian Roasted',
     originRegion: '100% Australian Roasted Blend',
     imageSrc: 'assets/brands/coffee.svg',
-    grindSize: 'Medium (600 µm)',
-    grindDetail: '25 Clicks · Precision Steel Conical',
-    grindAmount: '18.5 g',
-    doseDetail: 'Balanced Medium Roast (18.5g in)',
-    extractedWeight: '37.0 g',
+    grindSize: '5',
+    grindDetail: 'Dial Setting 5 · Precision Steel Conical',
+    grindAmount: '18.0 g',
+    doseDetail: 'Balanced Medium Roast (18g in)',
+    extractedWeight: '36.0 g',
     yieldDetail: 'Velvety Crema Yield (1:2.0)',
     brewTime: '28s',
     brewTemp: '93.0°C',
     ratio: '1:2.0',
-    tds: '1.36%',
     notes: ['Milk Chocolate', 'Hazelnut', 'Caramel', 'Toffee', 'Hint of Raisin'],
+    additionalNotes: 'Smooth everyday espresso recipe, paired nicely with textured oat or dairy milk.',
     timestamp: Date.now()
   }
 ];
@@ -159,7 +152,6 @@ export function openDatabase() {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-        store.createIndex('roast', 'roast', { unique: false });
         store.createIndex('brandName', 'brandName', { unique: false });
         store.createIndex('timestamp', 'timestamp', { unique: false });
       }
@@ -167,7 +159,6 @@ export function openDatabase() {
 
     request.onsuccess = (event) => {
       dbInstance = event.target.result;
-      // Ensure seed data is present if newly opened database is empty or missing curated brands
       checkAndSeedDatabase(dbInstance).then(() => {
         resolve(dbInstance);
       }).catch(reject);
@@ -194,7 +185,6 @@ async function checkAndSeedDatabase(db) {
       tx.onerror = () => reject(tx.error);
     });
   } else {
-    // Seamlessly add any newly added default curated brands (such as Coffee.) without affecting user extractions
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
@@ -228,9 +218,9 @@ export function getExtractionCount(db = dbInstance) {
 }
 
 /**
- * Retrieve all extraction records, optionally filtered by roast profile
+ * Retrieve all extraction records sorted by newest first
  */
-export async function getAllExtractions(filterRoast = 'all') {
+export async function getAllExtractions() {
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
@@ -239,12 +229,7 @@ export async function getAllExtractions(filterRoast = 'all') {
 
     request.onsuccess = () => {
       let results = request.result || [];
-      // Sort newest first
       results.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-      if (filterRoast && filterRoast !== 'all') {
-        results = results.filter(item => item.roast === filterRoast);
-      }
       resolve(results);
     };
 
@@ -264,10 +249,24 @@ export async function addExtractionRecord(record) {
     const fullRecord = {
       ...record,
       timestamp: record.timestamp || Date.now(),
-      imageSrc: record.imageSrc || getBrandFallbackSvg(record.roast)
+      imageSrc: record.imageSrc || 'assets/logo.jpg'
     };
 
     const request = store.add(fullRecord);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+/**
+ * Update an existing extraction record in IndexedDB
+ */
+export async function updateExtractionRecord(record) {
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.put(record);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
@@ -303,16 +302,4 @@ export async function resetDatabaseToDefaults() {
     };
     clearReq.onerror = () => reject(clearReq.error);
   });
-}
-
-/**
- * Helper to pick matching SVG badge for custom roast logs
- */
-function getBrandFallbackSvg(roast) {
-  switch (roast) {
-    case 'platinum': return 'assets/brands/sey.svg';
-    case 'titanium': return 'assets/brands/squaremile.svg';
-    case 'gold': return 'assets/brands/esmeralda.svg';
-    default: return 'assets/brands/onyx.svg';
-  }
 }

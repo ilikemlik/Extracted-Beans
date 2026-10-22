@@ -173,15 +173,6 @@
                 </button>
               </div>
             </div>
-
-            <!-- Roast Style Filter Pills Bar -->
-            <div class="list-filter-bar interactive-control" id="list-filter-bar">
-              <button class="filter-chip active" data-filter="all">All</button>
-              <button class="filter-chip" data-filter="silver">Chrome</button>
-              <button class="filter-chip" data-filter="platinum">Platinum</button>
-              <button class="filter-chip" data-filter="titanium">Black Chrome</button>
-              <button class="filter-chip" data-filter="gold">24K Gold</button>
-            </div>
           </div>
 
           <!-- Scrollable Feed of 2D Coffee Cards -->
@@ -193,18 +184,20 @@
 
     </section>
 
-    <!-- Modal: Log New Coffee Extraction into IndexedDB -->
+    <!-- Modal: Log / Edit Coffee Extraction into IndexedDB -->
     <div class="modal-backdrop" id="modal-log-extraction" aria-hidden="true" role="dialog" aria-labelledby="modal-log-title">
       <div class="modal-card">
         <div class="modal-header">
           <div class="modal-title-group">
-            <span class="modal-tag">INDEXEDDB LOGGING ENGINE</span>
+            <span class="modal-tag" id="modal-tag">INDEXEDDB LOGGING ENGINE</span>
             <h2 class="modal-title" id="modal-log-title">Log Coffee Extraction</h2>
           </div>
           <button class="modal-close-btn interactive-control" id="btn-close-modal" aria-label="Close modal">✕</button>
         </div>
 
         <form id="form-log-extraction" class="modal-form">
+          <input type="hidden" id="input-edit-id" value="">
+
           <div class="form-row two-col">
             <div class="form-group">
               <label for="input-brand">Roaster / Brand *</label>
@@ -212,7 +205,7 @@
             </div>
             <div class="form-group">
               <label for="input-edition">Edition / Varietal *</label>
-              <input type="text" id="input-edition" placeholder="e.g. Monarch Natural Reserve" required>
+              <input type="text" id="input-edition" placeholder="e.g. Monarch Reserve" required>
             </div>
           </div>
 
@@ -222,47 +215,55 @@
               <input type="text" id="input-origin" placeholder="e.g. Tolima, Colombia · 1,750m">
             </div>
             <div class="form-group">
-              <label for="select-roast">3D Roast Finish *</label>
-              <select id="select-roast" required>
-                <option value="silver">Chrome (Clean Mirror)</option>
-                <option value="platinum">Platinum (Ultra Specular)</option>
-                <option value="titanium">Black Chrome (Deep Smoky)</option>
-                <option value="gold">24K Gold (Pure Luster)</option>
+              <label for="select-grind">Grind Size (Breville 1–12) *</label>
+              <select id="select-grind" required>
+                <option value="1">1 (Finest)</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5" selected>5 (Default Balanced)</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12 (Coarsest)</option>
               </select>
             </div>
           </div>
 
-          <div class="form-section-divider">
-            <span>3 Quick Key Extraction Metrics</span>
+          <!-- Advanced Collapsible Section (Ground Dose, Liquid Yield, Brew Time, Water Temp) -->
+          <div class="advanced-toggle-wrapper">
+            <button type="button" class="btn-toggle-advanced interactive-control" id="btn-toggle-advanced" aria-expanded="false" aria-controls="advanced-fields-section">
+              <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+              <span id="advanced-toggle-label">Advanced Settings (Dose, Yield, Temp, Time)</span>
+            </button>
           </div>
 
-          <div class="form-row three-col">
-            <div class="form-group">
-              <label for="input-grind">1. Grind Size *</label>
-              <input type="text" id="input-grind" placeholder="e.g. Medium-Fine (580 µm)" required>
+          <div class="advanced-fields-section is-collapsed" id="advanced-fields-section">
+            <div class="form-row two-col">
+              <div class="form-group">
+                <label for="input-dose">Ground Amount</label>
+                <input type="text" id="input-dose" placeholder="e.g. 18.0 g" value="18.0 g">
+              </div>
+              <div class="form-group">
+                <label for="input-yield">Extracted Weight</label>
+                <input type="text" id="input-yield" placeholder="e.g. 36.0 g" value="36.0 g">
+              </div>
             </div>
-            <div class="form-group">
-              <label for="input-dose">2. Ground Amount *</label>
-              <input type="text" id="input-dose" placeholder="e.g. 18.0 g" required>
-            </div>
-            <div class="form-group">
-              <label for="input-yield">3. Extracted Weight *</label>
-              <input type="text" id="input-yield" placeholder="e.g. 36.0 g" required>
-            </div>
-          </div>
 
-          <div class="form-row three-col">
-            <div class="form-group">
-              <label for="input-time">Brew Time</label>
-              <input type="text" id="input-time" placeholder="e.g. 28s">
-            </div>
-            <div class="form-group">
-              <label for="input-temp">Water Temp</label>
-              <input type="text" id="input-temp" placeholder="e.g. 93.5°C">
-            </div>
-            <div class="form-group">
-              <label for="input-tds">TDS / EY</label>
-              <input type="text" id="input-tds" placeholder="e.g. 1.38%">
+            <div class="form-row two-col">
+              <div class="form-group">
+                <label for="input-time">Brew Time</label>
+                <input type="text" id="input-time" placeholder="e.g. 28s" value="28s">
+              </div>
+              <div class="form-group">
+                <label for="input-temp">Water Temp</label>
+                <input type="text" id="input-temp" placeholder="e.g. 93.5°C" value="93.5°C">
+              </div>
             </div>
           </div>
 
@@ -271,10 +272,15 @@
             <input type="text" id="input-notes" placeholder="e.g. Dark Chocolate, Caramel, Black Cherry">
           </div>
 
+          <div class="form-group">
+            <label for="input-additional-notes">Additional Notes</label>
+            <input type="text" id="input-additional-notes" placeholder="e.g. Best with 5s pre-infusion, velvety sweet finish...">
+          </div>
+
           <div class="modal-footer">
             <button type="button" class="btn-cancel interactive-control" id="btn-cancel-modal">Cancel</button>
             <button type="submit" class="btn-submit interactive-control" id="btn-save-extraction">
-              <span>Save to Database</span>
+              <span id="btn-save-text">Save to Database</span>
             </button>
           </div>
         </form>
@@ -297,7 +303,7 @@
             <span class="model-btn-name">Breville Barista Express</span>
             <span class="model-badge">DEFAULT</span>
           </button>
-          <button class="model-switch-btn" id="btn-model-classic" role="tab" aria-selected="false" data-model="classic" title="Classic Espresso Machine">
+          <button class="model-switch-btn" id="btn-model-classic" role="tab" aria-selected="false" data-model="classic" title="Breville Dual Boiler">
             <svg class="machine-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="4" width="20" height="16" rx="2"></rect>
               <path d="M6 8h.01"></path>
@@ -306,7 +312,7 @@
               <path d="M18 8h.01"></path>
               <line x1="6" y1="12" x2="18" y2="12"></line>
             </svg>
-            <span class="model-btn-name">Classic Espresso Machine</span>
+            <span class="model-btn-name">Breville Dual Boiler</span>
           </button>
         </div>
       </div>
