@@ -10,3 +10,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Uncompressed 3D models backup
+assets_backup/

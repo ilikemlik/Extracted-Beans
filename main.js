@@ -38,6 +38,8 @@ let undiscoveredRingGroup = null;
 let keyLight, fillLight, rimLight, ambientLight, hemisphereLight, frontLight;
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
+let animationFrameId = null;
+let isContextLost = false;
 
 // Wobble & Movement Limits (Dual-axis bounded tilt with elastic spring-back)
 const BASE_ROTATION_Y = 0.0; // Straight front 90 degrees to camera
@@ -232,17 +234,18 @@ function initThree() {
     powerPreference: "high-performance"
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const maxPixelRatio = window.innerWidth <= 768 ? 1.5 : 2.0;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
+  // WebGL Context Loss Recovery (Prevents Chromium Sad Canvas dead-face icon)
+  setupContextLossHandling(canvas);
+
   // Generate Room Environment for photorealistic metallic reflections
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-  pmremGenerator.compileEquirectangularShader();
-  const roomEnv = new RoomEnvironment();
-  scene.environment = pmremGenerator.fromScene(roomEnv).texture;
+  setupEnvironment();
 
   // 4. Lighting Rig
   setupLighting();
@@ -291,8 +294,8 @@ function setupLighting() {
   keyLight = new THREE.DirectionalLight(0xfff7ec, 3.2);
   keyLight.position.set(4, 6, 4);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.width = 2048;
-  keyLight.shadow.mapSize.height = 2048;
+  keyLight.shadow.mapSize.width = 1024;
+  keyLight.shadow.mapSize.height = 1024;
   keyLight.shadow.bias = -0.0005;
   keyLight.shadow.normalBias = 0.02;
   scene.add(keyLight);
@@ -311,6 +314,72 @@ function setupLighting() {
   frontLight = new THREE.DirectionalLight(0xffffff, 1.6);
   frontLight.position.set(0, 2.5, 6);
   scene.add(frontLight);
+}
+
+/* ==========================================================================
+   WebGL Context Loss & Environment Recovery
+   ========================================================================== */
+function setupContextLossHandling(canvas) {
+  if (!canvas || canvas.dataset.contextLostBound) return;
+  canvas.dataset.contextLostBound = 'true';
+
+  canvas.addEventListener('webglcontextlost', (event) => {
+    // CRITICAL: Calling preventDefault stops Chromium from painting the 'Sad Canvas' dead face icon
+    event.preventDefault();
+    isContextLost = true;
+    console.warn('[WebGL] Context lost detected. Pausing render loop and awaiting GPU recovery.');
+
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+
+    updateLoaderUI(100, 'Recovering graphics hardware...');
+    const loaderOverlay = document.getElementById('model-loader');
+    if (loaderOverlay) {
+      loaderOverlay.classList.remove('loaded');
+    }
+  }, false);
+
+  canvas.addEventListener('webglcontextrestored', () => {
+    console.info('[WebGL] Context restored by browser. Reconstructing 3D scene.');
+    isContextLost = false;
+
+    // Clear GPU cache references
+    modelCache.clear();
+    if (beanGroup) {
+      while (beanGroup.children.length > 0) {
+        beanGroup.remove(beanGroup.children[0]);
+      }
+    }
+    model = null;
+    undiscoveredTextRing = null;
+    undiscoveredRingGroup = null;
+
+    // Restore environment and lights
+    setupEnvironment();
+    createCleanGround();
+    createContactShadow();
+
+    // Reload model
+    loadModel(currentModelId);
+
+    // Restart render loop
+    animate(0);
+  }, false);
+}
+
+function setupEnvironment() {
+  if (!renderer || !scene) return;
+  try {
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    const roomEnv = new RoomEnvironment();
+    scene.environment = pmremGenerator.fromScene(roomEnv).texture;
+    pmremGenerator.dispose();
+  } catch (err) {
+    console.warn('[WebGL] PMREMGenerator environment error:', err);
+  }
 }
 
 /* ==========================================================================
@@ -2203,7 +2272,8 @@ function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const maxPixelRatio = window.innerWidth <= 768 ? 1.5 : 2.0;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
 
   // Maintain smooth responsive camera distance when resizing or rotating device
   if (!isZoomed && !isExtractedView) {
@@ -2217,7 +2287,8 @@ function onWindowResize() {
    Render Animation Loop (3/4 View - Clean Grounded Model)
    ========================================================================== */
 function animate(time) {
-  requestAnimationFrame(animate);
+  if (isContextLost) return;
+  animationFrameId = requestAnimationFrame(animate);
 
   // Keep camera facing straight front at machine center (Y = CAMERA_CENTER_Y)
   if (camera) {
@@ -2244,7 +2315,9 @@ function animate(time) {
   // Update HUD
   updateTelemetry();
 
-  renderer.render(scene, camera);
+  if (renderer && scene && camera) {
+    renderer.render(scene, camera);
+  }
 }
 
 // Start Three.js when DOM is ready
