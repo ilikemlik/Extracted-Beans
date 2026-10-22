@@ -130,6 +130,11 @@
 
         <!-- 2D Extracted Coffee Specification Cards List (IndexedDB Powered) -->
         <aside class="extracted-list-panel" id="extracted-list-panel" aria-label="Extracted Coffee Records Feed">
+          <!-- Mobile Expandable Sheet Drag Handle -->
+          <div class="sheet-drag-handle" id="sheet-drag-handle" role="button" aria-label="Toggle Full 3D View">
+            <span class="drag-bar"></span>
+          </div>
+
           <div class="list-panel-header">
             <div class="list-header-title-row">
               <div class="list-title-group">
@@ -182,8 +187,8 @@
               <input type="text" id="input-brand" placeholder="e.g. Onyx Coffee Lab" required>
             </div>
             <div class="form-group">
-              <label for="input-edition">Edition / Varietal *</label>
-              <input type="text" id="input-edition" placeholder="e.g. Monarch Reserve" required>
+              <label for="input-edition">Edition / Varietal</label>
+              <input type="text" id="input-edition" placeholder="e.g. Monarch Reserve">
             </div>
           </div>
 
@@ -199,7 +204,7 @@
                 <option value="2">2</option>
                 <option value="3">3</option>
                 <option value="4">4</option>
-                <option value="5" selected>5 (Default Balanced)</option>
+                <option value="5" selected>5</option>
                 <option value="6">6</option>
                 <option value="7">7</option>
                 <option value="8">8</option>

@@ -16,10 +16,20 @@ let isExtractedView = false;
 let activeExtractionId = null;
 const animationDuration = 2.5; // Seconds per cycle
 
-// Default camera positions
+// Default camera positions & Responsive Framing
 const defaultZ = 5;
 const zoomedZ = 2;
-const GROUND_Y = -1.0; // Precise ground level for level seating
+const GROUND_Y = -0.65; // Shifted higher to eliminate bottom clipping and decrease top dead space
+const CAMERA_CENTER_Y = 0.50; // Focused right at the center of the machine
+
+function getResponsiveCameraZ() {
+  const aspect = window.innerWidth / window.innerHeight;
+  if (aspect >= 1.0) {
+    return defaultZ; // Desktop default framing
+  }
+  // Mobile / portrait framing: smoothly pull camera back so the 3D model fits with breathing room
+  return Math.min(8.6, Math.max(7.2, 3.5 / aspect));
+}
 
 // Scene Core Variables
 let scene, camera, renderer, model, beanGroup, groundMesh, shadowMesh;
@@ -208,10 +218,11 @@ function initThree() {
   scene.background = new THREE.Color(0xf9f8f6);
   scene.fog = new THREE.FogExp2(0xf9f8f6, 0.036);
 
-  // 2. Camera setup with defaultZ, eye-level straight front 90 degrees
+  // 2. Camera setup with responsive Z distance, eye-level straight front 90 degrees
+  const initialZ = getResponsiveCameraZ();
   camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 0.2, defaultZ);
-  camera.lookAt(0, 0.2, 0);
+  camera.position.set(0, CAMERA_CENTER_Y, initialZ);
+  camera.lookAt(0, CAMERA_CENTER_Y, 0);
 
   // 3. Renderer & PBR Studio Environment
   renderer = new THREE.WebGLRenderer({
@@ -240,10 +251,22 @@ function initThree() {
   createCleanGround();
   createContactShadow();
 
+  // Root model group container (clean studio scene without any initial bean placeholder)
+  if (!beanGroup) {
+    beanGroup = new THREE.Group();
+    scene.add(beanGroup);
+  }
+
   // 6. Interaction Handlers
   setupInteractivity();
 
-  // 7. Load 3D Model with Fallback Pipeline (Default: Breville Barista Express)
+  // Mobile Experience: Open recipe drawer upfront if on mobile
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    toggleExtractedView(true, true);
+  }
+
+  // 7. Load 3D Model with Fallback Pipeline in background (Default: Breville Barista Express)
   loadModel(currentModelId);
 
   // 8. Render Loop
@@ -332,15 +355,21 @@ function finishLoaderUI(success, finalStatus) {
   const percentText = document.getElementById('model-load-percent');
   const statusEl = document.getElementById('model-load-status');
 
-  if (progressBar) progressBar.style.width = '100%';
-  if (percentText) percentText.textContent = '100%';
+  if (progressBar) progressBar.style.width = success ? '100%' : '0%';
+  if (percentText) percentText.textContent = success ? '100%' : '!';
   if (statusEl && finalStatus) statusEl.textContent = finalStatus;
 
-  setTimeout(() => {
+  if (success) {
+    setTimeout(() => {
+      if (loaderOverlay) {
+        loaderOverlay.classList.add('loaded');
+      }
+    }, 900);
+  } else {
     if (loaderOverlay) {
-      loaderOverlay.classList.add('loaded');
+      loaderOverlay.classList.remove('loaded');
     }
-  }, 900);
+  }
 }
 
 function updateModelSourceTelemetry(text) {
@@ -425,7 +454,7 @@ function createUndiscoveredTextRing() {
   ctx.textBaseline = 'middle';
 
   // Phrase around cylinder circumference
-  const phrase = "UNDISCOVERED - UNDISCOVERED - UNDISCOVERED  ";
+  const phrase = "- UNDISCOVERED - UNDISCOVERED - UNDISCOVERED -";
   ctx.fillText(phrase, canvas.width / 2, canvas.height / 2);
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -454,7 +483,7 @@ function createUndiscoveredTextRing() {
   // Parent group positioned floating IN FRONT of the coffee machine with forward perspective tilt
   undiscoveredRingGroup = new THREE.Group();
   undiscoveredRingGroup.name = 'undiscoveredRingGroup';
-  undiscoveredRingGroup.position.set(0, -0.05, 1.35); // In front of the front face of the machine
+  undiscoveredRingGroup.position.set(0, 0.30, 1.35); // In front of the front face of the machine
   undiscoveredRingGroup.rotation.x = 0.32; // Perspective tilt towards camera matching screenshot 2
   undiscoveredRingGroup.add(undiscoveredTextRing);
   undiscoveredRingGroup.visible = false;
@@ -511,6 +540,7 @@ function createNormalizedModelPivot(importedScene) {
   importedScene.position.set(-center.x, -box.min.y, -center.z);
   pivot.add(importedScene);
   pivot.scale.setScalar(targetScale);
+  pivot.userData.baseScale = targetScale;
 
   // Position base evenly on ground plane at GROUND_Y
   pivot.position.set(0, GROUND_Y, 0);
@@ -591,6 +621,8 @@ function loadModel(modelId) {
   const loaderOverlay = document.getElementById('model-loader');
   if (loaderOverlay) {
     loaderOverlay.classList.remove('loaded');
+    loaderOverlay.style.cursor = 'default';
+    loaderOverlay.onclick = null;
   }
 
   // Setup LoadingManager and DRACOLoader
@@ -636,18 +668,26 @@ function loadModel(modelId) {
       }
     },
     (error) => {
-      console.warn(`Could not load ${config.path} (${error.message || 'File not found'}), activating procedural fallback.`);
+      console.warn(`Could not load ${config.path} (${error.message || 'File not found'})`);
       isModelLoading = false;
 
-      if (model && beanGroup.children.includes(model)) {
+      if (model && beanGroup && beanGroup.children.includes(model)) {
         beanGroup.remove(model);
+        model = null;
       }
 
-      createCoffeeBeanModel();
-      modelSource = `PROCEDURAL (Fallback for ${config.name})`;
+      modelSource = `OFFLINE / FAILED`;
       updateModelSourceTelemetry(modelSource);
-      finishLoaderUI(false, `Procedural Model Active`);
-      playModelFadeInAnimation();
+      finishLoaderUI(false, `Failed to load ${config.name}. Tap to retry`);
+
+      if (loaderOverlay) {
+        loaderOverlay.style.cursor = 'pointer';
+        loaderOverlay.onclick = () => {
+          loaderOverlay.onclick = null;
+          loaderOverlay.style.cursor = 'default';
+          loadModel(modelId);
+        };
+      }
     }
   );
 }
@@ -655,21 +695,26 @@ function loadModel(modelId) {
 function replaceActiveModel(newPivot, config) {
   if (model && beanGroup.children.includes(model)) {
     const oldModel = model;
+    const oldBaseScale = oldModel.userData.baseScale || oldModel.scale.x || 1.0;
     gsap.to(oldModel.scale, {
-      x: oldModel.scale.x * 0.88,
-      y: oldModel.scale.y * 0.88,
-      z: oldModel.scale.z * 0.88,
+      x: oldBaseScale * 0.88,
+      y: oldBaseScale * 0.88,
+      z: oldBaseScale * 0.88,
       duration: 0.25,
       ease: "power2.in",
       onComplete: () => {
         if (beanGroup && beanGroup.children.includes(oldModel)) {
           beanGroup.remove(oldModel);
         }
+        // Essential: restore scale so cached pivot in modelCache never permanently shrinks
+        oldModel.scale.setScalar(oldBaseScale);
       }
     });
   }
 
   model = newPivot;
+  const targetScale = newPivot.userData.baseScale || newPivot.scale.x || 1.0;
+  newPivot.scale.setScalar(targetScale);
   beanGroup.add(model);
 
   playModelFadeInAnimation();
@@ -934,14 +979,16 @@ function createCleanGround() {
 function playModelFadeInAnimation() {
   if (!model) return;
 
-  // Ensure beanGroup stays firmly grounded at center
-  if (beanGroup) {
+  // Ensure beanGroup stays firmly grounded at center (unless in extracted recipe view)
+  if (beanGroup && !isExtractedView) {
     beanGroup.position.set(0, 0, 0);
     beanGroup.rotation.set(0, 0, 0);
   }
 
-  // Kill running animations
+  // Kill running animations & ensure scale is strictly baseScale
   gsap.killTweensOf(model.scale);
+  const targetScale = model.userData.baseScale || model.scale.x || 1.0;
+  model.scale.setScalar(targetScale);
   if (shadowMesh) gsap.killTweensOf(shadowMesh.material);
 
   const fadeTl = gsap.timeline({
@@ -1195,7 +1242,7 @@ async function renderExtractionFeed() {
         <div class="item-card-right">
           <div class="item-card-heading">
             <h3 class="item-brand-title">${escapeHtml(item.brandName)}</h3>
-            <p class="item-roast-edition">${escapeHtml(item.roastEdition)}</p>
+            ${item.roastEdition ? `<p class="item-roast-edition">${escapeHtml(item.roastEdition)}</p>` : ''}
           </div>
 
           <!-- The Key Information Items -->
@@ -1386,7 +1433,7 @@ function closeLogModal() {
   }
 }
 
-async function toggleExtractedView(forceState) {
+async function toggleExtractedView(forceState, isInstant = false) {
   const shouldOpen = (typeof forceState === 'boolean') ? forceState : !isExtractedView;
   if (shouldOpen === isExtractedView) return;
 
@@ -1419,73 +1466,85 @@ async function toggleExtractedView(forceState) {
 
     // 2. Choreograph 3D Bean: Pan Left, Zoom Out, Spin 360
     const targetX = isMobile ? 0.0 : -1.45;
-    const targetY = isMobile ? 0.85 : 0.0;
-    const targetZ = isMobile ? 6.2 : 5.85;
+    const targetY = isMobile ? 0.95 : 0.0;
+    const targetZ = isMobile ? getResponsiveCameraZ() * 1.05 : 5.85;
 
-    const tl = gsap.timeline({
-      onUpdate: updateTelemetry
-    });
+    if (isInstant) {
+      if (beanGroup) beanGroup.position.set(targetX, targetY, 0);
+      if (shadowMesh) {
+        shadowMesh.position.set(targetX, GROUND_Y, 0);
+        if (isMobile) shadowMesh.scale.set(0.85, 0.85, 1);
+      }
+      if (camera) camera.position.set(0, 0, targetZ);
+      if (model) model.rotation.set(0, BASE_ROTATION_Y - 0.08, 0);
+    } else {
+      const tl = gsap.timeline({
+        onUpdate: updateTelemetry
+      });
 
-    if (beanGroup) {
-      tl.to(beanGroup.position, {
-        x: targetX,
-        y: targetY,
-        duration: 1.6,
-        ease: "power3.inOut"
-      }, 0);
-    }
-
-    if (shadowMesh) {
-      tl.to(shadowMesh.position, {
-        x: targetX,
-        duration: 1.6,
-        ease: "power3.inOut"
-      }, 0);
-      if (isMobile) {
-        tl.to(shadowMesh.scale, {
-          x: 0.85,
-          y: 0.85,
+      if (beanGroup) {
+        tl.to(beanGroup.position, {
+          x: targetX,
+          y: targetY,
           duration: 1.6,
           ease: "power3.inOut"
         }, 0);
       }
-    }
 
-    if (camera) {
-      tl.to(camera.position, {
-        z: targetZ,
-        duration: 1.6,
-        ease: "power3.inOut"
-      }, 0);
-    }
+      if (shadowMesh) {
+        tl.to(shadowMesh.position, {
+          x: targetX,
+          duration: 1.6,
+          ease: "power3.inOut"
+        }, 0);
+        if (isMobile) {
+          tl.to(shadowMesh.scale, {
+            x: 0.85,
+            y: 0.85,
+            duration: 1.6,
+            ease: "power3.inOut"
+          }, 0);
+        }
+      }
 
-    if (model) {
-      tl.to(model.rotation, {
-        y: BASE_ROTATION_Y - 0.08,
-        x: 0,
-        duration: 1.4,
-        ease: "power3.inOut"
-      }, 0);
+      if (camera) {
+        tl.to(camera.position, {
+          z: targetZ,
+          duration: 1.6,
+          ease: "power3.inOut"
+        }, 0);
+      }
+
+      if (model) {
+        tl.to(model.rotation, {
+          y: BASE_ROTATION_Y - 0.08,
+          x: 0,
+          duration: 1.4,
+          ease: "power3.inOut"
+        }, 0);
+      }
     }
 
     // 3. UI states
     document.body.classList.add('extracted-mode-active');
     if (panel) panel.classList.add('active');
     if (btn) btn.classList.add('is-active');
-    if (btnTitle) btnTitle.textContent = 'BACK TO 3D BEAN';
-    if (btnSub) btnSub.textContent = 'Click to return to center inspection';
-    if (btnBadge) btnBadge.textContent = 'RETURN';
+    if (btnTitle) btnTitle.textContent = isMobile ? 'VIEW 3D MACHINE' : 'BACK TO 3D MACHINE';
+    if (btnSub) btnSub.textContent = isMobile ? 'Tap to inspect 3D espresso machine' : 'Click to return to center inspection';
+    if (btnBadge) btnBadge.textContent = isMobile ? '3D VIEW' : 'RETURN';
     if (statusBadge) statusBadge.textContent = 'MODE: EXTRACTION DATABASE';
 
-    // Staggered luxury fade-in of cards
-    gsap.from("#extracted-cards-container .extracted-item-card", {
-      opacity: 0,
-      y: 22,
-      stagger: 0.07,
-      duration: 0.55,
-      ease: "power2.out",
-      delay: 0.2
-    });
+    if (!isInstant) {
+      // Staggered luxury fade-in of cards
+      gsap.from("#extracted-cards-container .extracted-item-card", {
+        opacity: 0,
+        y: 22,
+        stagger: 0.07,
+        duration: 0.55,
+        ease: "power2.out",
+        delay: 0.2
+      });
+    }
 
     isExtractedView = true;
     updateTelemetry();
@@ -1520,7 +1579,8 @@ async function toggleExtractedView(forceState) {
 
     if (camera) {
       tl.to(camera.position, {
-        z: defaultZ,
+        y: CAMERA_CENTER_Y,
+        z: getResponsiveCameraZ(),
         duration: 1.4,
         ease: "power3.inOut"
       }, 0);
@@ -1805,15 +1865,19 @@ function setupInteractivity() {
         duration: 1.2,
         ease: "elastic.out(1, 0.4)"
       });
-      if (touchDist < 10) {
-        if (isExtractedView) {
-          toggleExtractedView(false);
-        }
-      }
     }
   });
 
-  // Primary Action Button: View Extracted Coffee
+  // Mobile Drag Handle on 2D Extracted List Panel
+  const dragHandle = document.getElementById('sheet-drag-handle');
+  if (dragHandle) {
+    dragHandle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleExtractedView(false);
+    });
+  }
+
+  // Primary Action Button: View Extracted Coffee / View 3D Machine
   const btnExtracted = document.getElementById('btn-view-extracted');
   if (btnExtracted) {
     btnExtracted.addEventListener('click', (e) => {
@@ -2088,6 +2152,11 @@ function onWindowResize() {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Maintain smooth responsive camera distance when resizing or rotating device
+  if (!isZoomed && !isExtractedView) {
+    camera.position.z = getResponsiveCameraZ();
+  }
 }
 
 /* ==========================================================================
@@ -2096,9 +2165,9 @@ function onWindowResize() {
 function animate(time) {
   requestAnimationFrame(animate);
 
-  // Keep camera facing straight front at machine center (Y=0.2)
+  // Keep camera facing straight front at machine center (Y = CAMERA_CENTER_Y)
   if (camera) {
-    camera.lookAt(0, 0.2, 0);
+    camera.lookAt(0, CAMERA_CENTER_Y, 0);
   }
 
   // Dual-axis bounded wobble tilt

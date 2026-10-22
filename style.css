@@ -145,6 +145,7 @@ a,
   display: flex;
   align-items: center;
   gap: 16px;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .brand-emblem {
@@ -521,6 +522,36 @@ a,
   transform: translate3d(0, 0, 0);
 }
 
+/* Mobile Expandable Sheet Drag Handle */
+.sheet-drag-handle {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sheet-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 2px 0 10px 0;
+    cursor: pointer;
+    touch-action: pan-y;
+  }
+
+  .sheet-drag-handle .drag-bar {
+    width: 44px;
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: rgba(201, 181, 156, 0.75);
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .sheet-drag-handle:active .drag-bar {
+    background: var(--accent-caramel-deep);
+    transform: scaleX(1.15);
+  }
+}
+
 /* Header inside list panel */
 .list-panel-header {
   display: flex;
@@ -543,38 +574,19 @@ a,
   gap: 8px;
 }
 
-.pulse-amber-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #D97706;
-  box-shadow: 0 0 8px rgba(217, 119, 6, 0.7);
-  animation: pulseAmber 2.2s infinite ease-in-out;
-}
-
-@keyframes pulseAmber {
-  0%, 100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.35); opacity: 1; box-shadow: 0 0 12px rgba(217, 119, 6, 0.9); }
-}
-
-.list-panel-title {
+.db-counter-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  background: rgba(201, 181, 156, 0.22);
+  border: 1px solid var(--border-caramel);
   font-family: var(--font-mono);
-  font-size: 0.70rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.08em;
   color: var(--accent-caramel-deep);
   text-transform: uppercase;
-}
-
-.db-counter-badge {
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  background: rgba(201, 181, 156, 0.25);
-  border: 1px solid rgba(201, 181, 156, 0.5);
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  font-weight: 700;
-  color: var(--text-primary);
 }
 
 .list-header-actions {
@@ -821,6 +833,10 @@ a,
   margin-top: 1px;
 }
 
+.item-roast-edition:empty {
+  display: none;
+}
+
 /* 3 Quick Extraction Information Items Grid */
 .item-metrics-grid {
   display: flex;
@@ -906,7 +922,13 @@ a,
   font-weight: 600;
 }
 
-/* Mode Transition Rules (Fades origin card & telemetry when in Extracted Mode) */
+/* Mode Transition Rules (Fades origin card, telemetry, and brand header when in Extracted Mode) */
+.extracted-mode-active .brand-wrapper {
+  opacity: 0;
+  transform: translate3d(0, -12px, 0);
+  pointer-events: none;
+}
+
 .extracted-mode-active #origin-info-card {
   opacity: 0;
   transform: translate3d(-40px, 0, 0);
@@ -1601,11 +1623,18 @@ a,
   }
 }
 
+/* When in extracted mode, completely remove the overlapping action pill */
+.extracted-mode-active .bottom-actions-container,
+.extracted-mode-active .primary-extracted-btn,
+.extracted-mode-active #btn-view-extracted {
+  display: none !important;
+}
+
 @media (max-width: 768px) {
   /* Vertical Split: 3D Bean owns upper half, Extracted Specs Feed owns lower half */
   .extracted-mode-active .right-hud-wrapper {
     position: fixed;
-    bottom: 80px;
+    bottom: 64px; /* Floats cleanly right above model switcher without overlap */
     left: 12px;
     right: 12px;
     align-items: center;
@@ -1667,9 +1696,115 @@ a,
     padding: 10px 14px;
     font-size: 0.68rem;
   }
+
+  /* Mobile Non-Blocking Mini Loader Pill in Top-Right Corner */
+  .model-loader-overlay {
+    top: 14px;
+    right: 14px;
+    left: auto;
+    transform: none;
+    z-index: 60;
+    pointer-events: none;
+  }
+
+  .model-loader-overlay.loaded {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.92);
+  }
+
+  .model-loader-overlay .loader-card {
+    min-width: auto;
+    padding: 6px 12px;
+    gap: 8px;
+    border-radius: var(--radius-full);
+    background: rgba(249, 248, 246, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 4px 16px rgba(40, 30, 20, 0.14);
+    border: 1px solid var(--border-caramel);
+  }
+
+  .model-loader-overlay .loader-spinner {
+    width: 14px;
+    height: 14px;
+    border-width: 2px;
+  }
+
+  .model-loader-overlay .loader-header {
+    gap: 6px;
+  }
+
+  .model-loader-overlay .loader-title {
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+  }
+
+  .model-loader-overlay .loader-percent {
+    font-size: 0.58rem;
+  }
+
+  .model-loader-overlay .loader-track,
+  .model-loader-overlay .loader-status {
+    display: none;
+  }
+
+  /* Mobile Modal Layout: Single column fields for clean touch input */
+  .modal-backdrop {
+    padding: 16px 12px;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-width: 480px;
+    max-height: 88vh;
+    padding: 22px 18px 20px 18px;
+    border-radius: var(--radius-md);
+  }
+
+  .modal-header {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+  }
+
+  .modal-title {
+    font-size: 1.18rem;
+  }
+
+  .modal-form {
+    gap: 12px;
+  }
+
+  .modal-form .form-row.two-col,
+  .modal-form .form-row.three-col {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }
 
 @media (max-width: 640px) {
+  .app-header {
+    padding: 12px 14px 0 14px;
+  }
+
+  .brand-wrapper {
+    gap: 10px;
+  }
+
+  .brand-emblem {
+    width: 42px;
+    height: 42px;
+  }
+
+  .brand-text h1 {
+    font-size: 0.96rem;
+    letter-spacing: 0.12em;
+  }
+
+  .brand-text p {
+    font-size: 0.60rem;
+    letter-spacing: 0.12em;
+  }
+
   .origin-card {
     display: none; /* Keep screen clean for 3D bean on mobile */
   }
@@ -1680,6 +1815,38 @@ a,
   
   .roast-selector {
     transform: scale(0.92);
+  }
+
+  .bottom-bar {
+    bottom: 12px;
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .model-switcher-pill {
+    padding: 4px;
+    gap: 4px;
+    max-width: 96vw;
+  }
+
+  .model-switch-btn {
+    padding: 6px 14px;
+    font-size: 0.74rem;
+  }
+
+  .primary-extracted-btn {
+    padding: 10px 20px;
+    gap: 12px;
+    max-width: 94vw;
+  }
+
+  .footer-hint {
+    font-size: 0.58rem;
+    text-align: center;
+    max-width: 90vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
