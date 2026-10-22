@@ -947,12 +947,16 @@ function createContactShadow() {
     map: shadowTexture,
     transparent: true,
     opacity: 0.52,
-    depthWrite: false
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -4
   });
 
   shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
   shadowMesh.rotation.x = -Math.PI / 2;
-  shadowMesh.position.y = GROUND_Y + 0.002;
+  shadowMesh.position.y = GROUND_Y + 0.005;
+  shadowMesh.renderOrder = 2;
   scene.add(shadowMesh);
 }
 
@@ -970,6 +974,7 @@ function createCleanGround() {
   groundMesh.rotation.x = -Math.PI / 2;
   groundMesh.position.y = GROUND_Y;
   groundMesh.receiveShadow = true;
+  groundMesh.renderOrder = 0;
   scene.add(groundMesh);
 }
 
@@ -1030,15 +1035,20 @@ function playModelFadeInAnimation() {
     ease: "power2.out"
   }, 0);
 
-  // Contact shadow fades in smoothly with the model
+  // Contact shadow fades in smoothly with the model (unless elevated in mobile extracted mode)
   if (shadowMesh) {
-    shadowMesh.material.opacity = 0;
-    shadowMesh.scale.set(1.0, 1.0, 1.0);
-    fadeTl.to(shadowMesh.material, {
-      opacity: 0.45,
-      duration: 1.6,
-      ease: "power2.out"
-    }, 0);
+    const isMobile = window.innerWidth <= 768;
+    if (isExtractedView && isMobile) {
+      shadowMesh.material.opacity = 0;
+    } else {
+      shadowMesh.material.opacity = 0;
+      shadowMesh.scale.set(1.0, 1.0, 1.0);
+      fadeTl.to(shadowMesh.material, {
+        opacity: 0.52,
+        duration: 1.6,
+        ease: "power2.out"
+      }, 0);
+    }
   }
 }
 
@@ -1454,6 +1464,7 @@ async function toggleExtractedView(forceState, isInstant = false) {
   if (shadowMesh) {
     gsap.killTweensOf(shadowMesh.position);
     gsap.killTweensOf(shadowMesh.scale);
+    gsap.killTweensOf(shadowMesh.material);
   }
   if (camera) gsap.killTweensOf(camera.position);
   if (model) gsap.killTweensOf(model.rotation);
@@ -1466,16 +1477,22 @@ async function toggleExtractedView(forceState, isInstant = false) {
 
     // 2. Choreograph 3D Bean: Pan Left, Zoom Out, Spin 360
     const targetX = isMobile ? 0.0 : -1.45;
-    const targetY = isMobile ? 0.95 : 0.0;
+    const targetY = isMobile ? 1.32 : 0.0;
     const targetZ = isMobile ? getResponsiveCameraZ() * 1.05 : 5.85;
 
     if (isInstant) {
       if (beanGroup) beanGroup.position.set(targetX, targetY, 0);
       if (shadowMesh) {
-        shadowMesh.position.set(targetX, GROUND_Y, 0);
-        if (isMobile) shadowMesh.scale.set(0.85, 0.85, 1);
+        shadowMesh.position.set(targetX, GROUND_Y + 0.005, 0);
+        if (isMobile) {
+          shadowMesh.material.opacity = 0;
+          shadowMesh.scale.set(0.85, 0.85, 1);
+        } else {
+          shadowMesh.material.opacity = 0.52;
+          shadowMesh.scale.set(1.0, 1.0, 1.0);
+        }
       }
-      if (camera) camera.position.set(0, 0, targetZ);
+      if (camera) camera.position.set(0, CAMERA_CENTER_Y, targetZ);
       if (model) model.rotation.set(0, BASE_ROTATION_Y - 0.08, 0);
     } else {
       const tl = gsap.timeline({
@@ -1498,17 +1515,31 @@ async function toggleExtractedView(forceState, isInstant = false) {
           ease: "power3.inOut"
         }, 0);
         if (isMobile) {
+          // Fade out shadow quickly as machine takes off into the air
+          tl.to(shadowMesh.material, {
+            opacity: 0,
+            duration: 0.45,
+            ease: "power2.out"
+          }, 0);
           tl.to(shadowMesh.scale, {
             x: 0.85,
             y: 0.85,
             duration: 1.6,
             ease: "power3.inOut"
           }, 0);
+        } else {
+          // On desktop, keep shadow fully visible and sliding with machine
+          tl.to(shadowMesh.material, {
+            opacity: 0.52,
+            duration: 0.6,
+            ease: "power2.out"
+          }, 0);
         }
       }
 
       if (camera) {
         tl.to(camera.position, {
+          y: CAMERA_CENTER_Y,
           z: targetZ,
           duration: 1.6,
           ease: "power3.inOut"
@@ -1564,6 +1595,7 @@ async function toggleExtractedView(forceState, isInstant = false) {
     }
 
     if (shadowMesh) {
+      shadowMesh.position.y = GROUND_Y + 0.005;
       tl.to(shadowMesh.position, {
         x: 0,
         duration: 1.4,
@@ -1575,6 +1607,26 @@ async function toggleExtractedView(forceState, isInstant = false) {
         duration: 1.4,
         ease: "power3.inOut"
       }, 0);
+
+      // Realistic touchdown landing: Keep shadow hidden during initial descent,
+      // and smoothly fade it in during the final ~0.6s as the machine contacts the floor
+      if (isMobile) {
+        tl.fromTo(shadowMesh.material,
+          { opacity: 0 },
+          {
+            opacity: 0.52,
+            duration: 0.6,
+            ease: "power2.out"
+          },
+          0.8 // starts at 0.8s into the 1.4s descent
+        );
+      } else {
+        tl.to(shadowMesh.material, {
+          opacity: 0.52,
+          duration: 0.8,
+          ease: "power2.out"
+        }, 0);
+      }
     }
 
     if (camera) {
@@ -2156,6 +2208,8 @@ function onWindowResize() {
   // Maintain smooth responsive camera distance when resizing or rotating device
   if (!isZoomed && !isExtractedView) {
     camera.position.z = getResponsiveCameraZ();
+  } else if (isExtractedView && window.innerWidth <= 768) {
+    camera.position.z = getResponsiveCameraZ() * 1.05;
   }
 }
 
