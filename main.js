@@ -38,6 +38,8 @@ let undiscoveredRingGroup = null;
 let keyLight, fillLight, rimLight, ambientLight, hemisphereLight, frontLight;
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
+let animationFrameId = null;
+let isContextLost = false;
 
 // Wobble & Movement Limits (Dual-axis bounded tilt with elastic spring-back)
 const BASE_ROTATION_Y = 0.0; // Straight front 90 degrees to camera
@@ -208,10 +210,50 @@ const extractionData = {
 };
 
 /* ==========================================================================
-   Initialize Three.js World
+   Initialize Visual Experience (Desktop 3D vs Mobile 2D Studio)
    ========================================================================== */
-function initThree() {
+function initExperience() {
+  setupInteractivity();
+
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    // Mobile View: 100% Lightweight 2D Studio Product Showcase (Zero WebGL, Zero Crash)
+    initMobileStudio();
+    toggleExtractedView(true, true);
+  } else {
+    // Desktop View: High-fidelity Three.js 3D Interactive Lab
+    initDesktopThree();
+  }
+}
+
+function initMobileStudio() {
+  const loaderOverlay = document.getElementById('model-loader');
+  if (loaderOverlay) {
+    loaderOverlay.classList.add('loaded');
+  }
+  updateMobileShowcaseImage(currentModelId);
+  updateModelSourceTelemetry(MODELS_CONFIG[currentModelId].telemetryName);
+}
+
+function updateMobileShowcaseImage(modelId) {
+  const brevilleImg = document.getElementById('mobile-img-breville');
+  const classicImg = document.getElementById('mobile-img-classic');
+  const undiscoveredBadge = document.getElementById('mobile-undiscovered-badge');
+
+  if (modelId === 'classic') {
+    if (brevilleImg) brevilleImg.classList.remove('active');
+    if (classicImg) classicImg.classList.add('active');
+    if (undiscoveredBadge) undiscoveredBadge.classList.add('visible');
+  } else {
+    if (classicImg) classicImg.classList.remove('active');
+    if (brevilleImg) brevilleImg.classList.add('active');
+    if (undiscoveredBadge) undiscoveredBadge.classList.remove('visible');
+  }
+}
+
+function initDesktopThree() {
   const canvas = document.getElementById('webgl-canvas');
+  if (!canvas) return;
 
   // 1. Scene & Atmospheric Fog (Centering around #F9F8F6)
   scene = new THREE.Scene();
@@ -232,17 +274,17 @@ function initThree() {
     powerPreference: "high-performance"
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
+  // WebGL Context Loss Recovery (Prevents Chromium Sad Canvas dead-face icon)
+  setupContextLossHandling(canvas);
+
   // Generate Room Environment for photorealistic metallic reflections
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-  pmremGenerator.compileEquirectangularShader();
-  const roomEnv = new RoomEnvironment();
-  scene.environment = pmremGenerator.fromScene(roomEnv).texture;
+  setupEnvironment();
 
   // 4. Lighting Rig
   setupLighting();
@@ -257,19 +299,10 @@ function initThree() {
     scene.add(beanGroup);
   }
 
-  // 6. Interaction Handlers
-  setupInteractivity();
-
-  // Mobile Experience: Open recipe drawer upfront if on mobile
-  const isMobile = window.innerWidth <= 768;
-  if (isMobile) {
-    toggleExtractedView(true, true);
-  }
-
-  // 7. Load 3D Model with Fallback Pipeline in background (Default: Breville Barista Express)
+  // 6. Load 3D Model in background (Default: Breville Barista Express)
   loadModel(currentModelId);
 
-  // 8. Render Loop
+  // 7. Render Loop
   animate(0);
 }
 
@@ -314,8 +347,74 @@ function setupLighting() {
 }
 
 /* ==========================================================================
+   WebGL Context Loss & Environment Recovery
+   ========================================================================== */
+function setupContextLossHandling(canvas) {
+  if (!canvas || canvas.dataset.contextLostBound) return;
+  canvas.dataset.contextLostBound = 'true';
+
+  canvas.addEventListener('webglcontextlost', (event) => {
+    // CRITICAL: Calling preventDefault stops Chromium from painting the 'Sad Canvas' dead face icon
+    event.preventDefault();
+    isContextLost = true;
+    console.warn('[WebGL] Context lost detected. Pausing render loop and awaiting GPU recovery.');
+
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+
+    updateLoaderUI(100, 'Recovering graphics hardware...');
+    const loaderOverlay = document.getElementById('model-loader');
+    if (loaderOverlay) {
+      loaderOverlay.classList.remove('loaded');
+    }
+  }, false);
+
+  canvas.addEventListener('webglcontextrestored', () => {
+    console.info('[WebGL] Context restored by browser. Reconstructing 3D scene.');
+    isContextLost = false;
+
+    // Clear GPU cache references
+    modelCache.clear();
+    if (beanGroup) {
+      while (beanGroup.children.length > 0) {
+        beanGroup.remove(beanGroup.children[0]);
+      }
+    }
+    model = null;
+    undiscoveredTextRing = null;
+    undiscoveredRingGroup = null;
+
+    // Restore environment and lights
+    setupEnvironment();
+    createCleanGround();
+    createContactShadow();
+
+    // Reload model
+    loadModel(currentModelId);
+
+    // Restart render loop
+    animate(0);
+  }, false);
+}
+
+function setupEnvironment() {
+  if (!renderer || !scene) return;
+  try {
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    const roomEnv = new RoomEnvironment();
+    scene.environment = pmremGenerator.fromScene(roomEnv).texture;
+    pmremGenerator.dispose();
+  } catch (err) {
+    console.warn('[WebGL] PMREMGenerator environment error:', err);
+  }
+}
+
+/* ==========================================================================
    3D Model Loader Pipeline (GLTFLoader + DRACOLoader + Normalization)
-   Supports instant cached switching between Breville Barista Express & Classic Espresso
+   Desktop: Full 3D Breville Barista Express + Breville Dual Boiler Silhouette
    ========================================================================== */
 const MODELS_CONFIG = {
   breville: {
@@ -328,9 +427,9 @@ const MODELS_CONFIG = {
   classic: {
     id: 'classic',
     name: 'Breville Dual Boiler',
-    path: 'assets/coffee_bean.glb',
+    path: 'assets/Breville Dual Boiler.glb',
     telemetryName: 'BREVILLE DUAL BOILER',
-    description: 'Dual Boiler Specialty Espresso Machine'
+    description: 'Dual Boiler Specialty Espresso Machine (Silhouette)'
   }
 };
 
@@ -721,7 +820,6 @@ function replaceActiveModel(newPivot, config) {
 }
 
 function switchModel(targetModelId) {
-  if (targetModelId === currentModelId && model) return;
   currentModelId = targetModelId;
 
   // Update switcher UI buttons active state
@@ -742,7 +840,15 @@ function switchModel(targetModelId) {
     }
   }
 
-  loadModel(targetModelId);
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    // Mobile 2D Studio Image Cross-fade
+    updateMobileShowcaseImage(targetModelId);
+    updateModelSourceTelemetry(MODELS_CONFIG[targetModelId].telemetryName);
+  } else {
+    // Desktop 3D Model Stream
+    loadModel(targetModelId);
+  }
 
   // If extraction view is active, update recipe feed state
   if (isExtractedView) {
@@ -1470,6 +1576,9 @@ async function toggleExtractedView(forceState, isInstant = false) {
   if (model) gsap.killTweensOf(model.rotation);
 
   const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    document.body.classList.toggle('extracted-open-mobile', shouldOpen);
+  }
 
   if (shouldOpen) {
     // 1. Refresh extraction data feed from IndexedDB
@@ -2199,17 +2308,34 @@ function setupInteractivity() {
 }
 
 function onWindowResize() {
-  if (!camera || !renderer) return;
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+    updateMobileShowcaseImage(currentModelId);
+    return;
+  }
+
+  // Transitioning from mobile to desktop: lazily initialize Three.js
+  if (!renderer) {
+    initDesktopThree();
+    return;
+  }
+
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
 
   // Maintain smooth responsive camera distance when resizing or rotating device
   if (!isZoomed && !isExtractedView) {
     camera.position.z = getResponsiveCameraZ();
-  } else if (isExtractedView && window.innerWidth <= 768) {
-    camera.position.z = getResponsiveCameraZ() * 1.05;
+  }
+
+  if (!animationFrameId && !isContextLost) {
+    animate(0);
   }
 }
 
@@ -2217,7 +2343,8 @@ function onWindowResize() {
    Render Animation Loop (3/4 View - Clean Grounded Model)
    ========================================================================== */
 function animate(time) {
-  requestAnimationFrame(animate);
+  if (isContextLost) return;
+  animationFrameId = requestAnimationFrame(animate);
 
   // Keep camera facing straight front at machine center (Y = CAMERA_CENTER_Y)
   if (camera) {
@@ -2244,8 +2371,10 @@ function animate(time) {
   // Update HUD
   updateTelemetry();
 
-  renderer.render(scene, camera);
+  if (renderer && scene && camera) {
+    renderer.render(scene, camera);
+  }
 }
 
-// Start Three.js when DOM is ready
-window.addEventListener('DOMContentLoaded', initThree);
+// Start experience when DOM is ready (Desktop 3D vs Mobile 2D Studio)
+window.addEventListener('DOMContentLoaded', initExperience);

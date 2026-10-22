@@ -1823,15 +1823,42 @@ a,
     padding: 0 10px;
   }
 
+  /* Mobile: Suppress 3D WebGL Canvas and Model Loader */
+  #webgl-canvas {
+    display: none !important;
+  }
+  
+  .model-loader-overlay {
+    display: none !important;
+  }
+
+  .mobile-showcase-container {
+    display: flex !important;
+  }
+
+  .model-switcher-container {
+    display: flex !important;
+    margin-bottom: 2px;
+  }
+
   .model-switcher-pill {
-    padding: 4px;
+    padding: 3px 6px;
     gap: 4px;
-    max-width: 96vw;
+    background: rgba(249, 248, 246, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-caramel);
+    box-shadow: 0 8px 24px rgba(60, 44, 34, 0.08);
   }
 
   .model-switch-btn {
-    padding: 6px 14px;
-    font-size: 0.74rem;
+    padding: 5px 12px;
+    font-size: 0.70rem;
+  }
+
+  .model-switch-btn .machine-icon {
+    width: 14px;
+    height: 14px;
   }
 
   .primary-extracted-btn {
@@ -1987,4 +2014,108 @@ a,
   max-width: 330px;
   margin: 0 auto;
 }
+
+/* ==========================================================================
+   Mobile 2D Product Studio Showcase (Zero WebGL Architecture)
+   ========================================================================== */
+.mobile-showcase-container {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.95) 0%, rgba(249, 248, 246, 0.98) 75%);
+}
+
+.mobile-showcase-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 380px;
+  height: 60vh;
+  margin-top: -36px;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-showcase-image-wrapper {
+  position: relative;
+  width: 270px;
+  height: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-showcase-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(0 16px 30px rgba(60, 44, 34, 0.14));
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+.mobile-showcase-img.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Soft Grounded Studio Contact Shadow */
+.mobile-contact-shadow {
+  width: 230px;
+  height: 20px;
+  background: radial-gradient(ellipse at center, rgba(60, 44, 34, 0.32) 0%, rgba(60, 44, 34, 0.08) 50%, transparent 75%);
+  border-radius: 50%;
+  margin-top: -8px;
+  filter: blur(4px);
+  transform: scaleY(0.42);
+}
+
+/* Undiscovered Ribbon Badge for Dual Boiler on mobile */
+.mobile-undiscovered-badge {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: rgba(20, 20, 23, 0.90);
+  color: #FFFFFF;
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  border: 1px solid rgba(201, 181, 156, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.mobile-undiscovered-badge.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Smoothly raise machine photo when mobile recipe sheet opens */
+body.extracted-open-mobile .mobile-showcase-stage {
+  transform: translateY(-80px) scale(0.86);
+}
+
 
