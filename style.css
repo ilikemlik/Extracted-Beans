@@ -1823,15 +1823,9 @@ a,
     padding: 0 10px;
   }
 
-  .model-switcher-pill {
-    padding: 4px;
-    gap: 4px;
-    max-width: 96vw;
-  }
-
-  .model-switch-btn {
-    padding: 6px 14px;
-    font-size: 0.74rem;
+  /* Mobile Optimization: Hide 3D model switcher pill on mobile for maximum performance and focus */
+  .model-switcher-container {
+    display: none !important;
   }
 
   .primary-extracted-btn {

@@ -40,6 +40,8 @@ let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
 let animationFrameId = null;
 let isContextLost = false;
+let forceSilhouetteMode = false;
+let masterModelScene = null;
 
 // Wobble & Movement Limits (Dual-axis bounded tilt with elastic spring-back)
 const BASE_ROTATION_Y = 0.0; // Straight front 90 degrees to camera
@@ -234,7 +236,7 @@ function initThree() {
     powerPreference: "high-performance"
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  const maxPixelRatio = window.innerWidth <= 768 ? 1.5 : 2.0;
+  const maxPixelRatio = window.innerWidth <= 768 ? 1.25 : 1.75;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
@@ -329,6 +331,11 @@ function setupContextLossHandling(canvas) {
     isContextLost = true;
     console.warn('[WebGL] Context lost detected. Pausing render loop and awaiting GPU recovery.');
 
+    // If context ever drops on mobile, automatically fall back to silhouette mode for zero VRAM
+    if (window.innerWidth <= 768) {
+      forceSilhouetteMode = true;
+    }
+
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId);
       animationFrameId = null;
@@ -383,8 +390,21 @@ function setupEnvironment() {
 }
 
 /* ==========================================================================
-   3D Model Loader Pipeline (GLTFLoader + DRACOLoader + Normalization)
-   Supports instant cached switching between Breville Barista Express & Classic Espresso
+   Adaptive Mobile Performance Detection
+   ========================================================================== */
+function isLowMemoryMobile() {
+  if (forceSilhouetteMode) return true;
+  const isMobile = window.innerWidth <= 768;
+  if (!isMobile) return false;
+  // Fall back to silhouette on mobile devices with constrained memory or low CPU concurrency
+  if (navigator.deviceMemory && navigator.deviceMemory <= 4) return true;
+  if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) return true;
+  return false;
+}
+
+/* ==========================================================================
+   3D Model Loader Pipeline (GLTFLoader + Normalization)
+   Shares single lightweight Breville model for both authentic PBR and stealth silhouette
    ========================================================================== */
 const MODELS_CONFIG = {
   breville: {
@@ -397,9 +417,9 @@ const MODELS_CONFIG = {
   classic: {
     id: 'classic',
     name: 'Breville Dual Boiler',
-    path: 'assets/coffee_bean.glb',
+    path: 'assets/Breville Barista Express.glb',
     telemetryName: 'BREVILLE DUAL BOILER',
-    description: 'Dual Boiler Specialty Espresso Machine'
+    description: 'Dual Boiler Specialty Espresso Machine (Silhouette)'
   }
 };
 
@@ -458,7 +478,7 @@ function updateModelSourceTelemetry(text) {
    - Applies deep matte stealth silhouette shader for Breville Dual Boiler (undiscovered)
    ========================================================================== */
 function prepareModelScene(importedScene, modelId) {
-  const isSilhouette = (modelId === 'classic');
+  const isSilhouette = (modelId === 'classic') || isLowMemoryMobile();
 
   // Deep matte silhouette material for undiscovered Breville Dual Boiler (matching screenshot 1)
   const silhouetteMat = isSilhouette
@@ -683,6 +703,19 @@ function loadModel(modelId) {
     return;
   }
 
+  // Instant desktop model switching if base model is already in memory
+  if (masterModelScene) {
+    const clonedScene = masterModelScene.clone(true);
+    prepareModelScene(clonedScene, modelId);
+    const pivot = createNormalizedModelPivot(clonedScene);
+    modelCache.set(modelId, pivot);
+    replaceActiveModel(pivot, config);
+    updateUndiscoveredRingVisibility(modelId);
+    updateModelSourceTelemetry(config.telemetryName);
+    finishLoaderUI(true, `${config.name} Ready`);
+    return;
+  }
+
   if (isModelLoading) return;
   isModelLoading = true;
 
@@ -703,7 +736,7 @@ function loadModel(modelId) {
 
   const dracoLoader = new DRACOLoader(manager);
   dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-  dracoLoader.setDecoderConfig({ type: 'js' });
+  dracoLoader.setDecoderConfig({ type: 'wasm' }); // High-performance WebAssembly decoder
 
   const gltfLoader = new GLTFLoader(manager);
   gltfLoader.setDRACOLoader(dracoLoader);
@@ -712,6 +745,7 @@ function loadModel(modelId) {
     config.path,
     (gltf) => {
       console.log('Successfully loaded 3D GLB model:', config.path);
+      masterModelScene = gltf.scene.clone(true);
       const importedScene = gltf.scene;
 
       // Preserve authentic materials and setup shadows (or deep matte silhouette for Dual Boiler)
@@ -2272,7 +2306,7 @@ function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  const maxPixelRatio = window.innerWidth <= 768 ? 1.5 : 2.0;
+  const maxPixelRatio = window.innerWidth <= 768 ? 1.25 : 1.75;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
 
   // Maintain smooth responsive camera distance when resizing or rotating device
