@@ -47,7 +47,7 @@
         <div class="loader-track">
           <div class="loader-bar" id="model-load-progress"></div>
         </div>
-        <span class="loader-status" id="model-load-status">Connecting to assets/coffee_bean.glb...</span>
+        <span class="loader-status" id="model-load-status">Streaming 3D Espresso Machine assets...</span>
       </div>
     </div>
   </div>
@@ -116,8 +116,8 @@
       </div>
     </header>
 
-    <!-- Macro Inspection Detail Card (Reveals upon Zoom In) -->
-    <aside class="macro-panel" id="macro-panel" aria-label="Macro Inspection Panel">
+    <!-- Macro Inspection Detail Card (Hidden) -->
+    <aside class="macro-panel" id="macro-panel" style="display: none;" aria-label="Macro Inspection Panel">
       <div class="macro-header">
         <span>Macro Extraction Spec</span>
         <span class="mode-badge" id="macro-zoom-tag">2.5X ZOOM</span>
@@ -283,6 +283,34 @@
 
     <!-- Bottom Action & Instruction Banner -->
     <footer class="bottom-bar">
+      <!-- Floating Segmented 3D Model Switcher Bar -->
+      <div class="model-switcher-container" id="model-switcher-container">
+        <div class="model-switcher-pill interactive-control" role="tablist" aria-label="Espresso Machine Model Selection">
+          <button class="model-switch-btn is-active" id="btn-model-breville" role="tab" aria-selected="true" data-model="breville" title="Breville Barista Express">
+            <svg class="machine-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+              <line x1="6" y1="1" x2="6" y2="4"></line>
+              <line x1="10" y1="1" x2="10" y2="4"></line>
+              <line x1="14" y1="1" x2="14" y2="4"></line>
+            </svg>
+            <span class="model-btn-name">Breville Barista Express</span>
+            <span class="model-badge">DEFAULT</span>
+          </button>
+          <button class="model-switch-btn" id="btn-model-classic" role="tab" aria-selected="false" data-model="classic" title="Classic Espresso Machine">
+            <svg class="machine-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+              <path d="M6 8h.01"></path>
+              <path d="M10 8h.01"></path>
+              <path d="M14 8h.01"></path>
+              <path d="M18 8h.01"></path>
+              <line x1="6" y1="12" x2="18" y2="12"></line>
+            </svg>
+            <span class="model-btn-name">Classic Espresso Machine</span>
+          </button>
+        </div>
+      </div>
+
       <div class="bottom-actions-container">
         <!-- Primary Action: View Extracted Coffee Button -->
         <button class="primary-extracted-btn interactive-control" id="btn-view-extracted" aria-label="View Extracted Coffee Recipe and Extraction Specs">
@@ -299,8 +327,8 @@
           <span class="btn-status-pill" id="btn-extracted-badge">RECIPE</span>
         </button>
 
-        <!-- Secondary Action: 2.5X Macro Zoom Button -->
-        <button class="secondary-macro-pill interactive-control" id="btn-macro-zoom" title="Toggle 2.5X Macro Inspection" aria-label="Toggle 2.5X Macro Inspection">
+        <!-- Secondary Action: 2.5X Macro Zoom Button (Hidden) -->
+        <button class="secondary-macro-pill interactive-control" id="btn-macro-zoom" style="display: none;" title="Toggle 2.5X Macro Inspection" aria-label="Toggle 2.5X Macro Inspection">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -312,7 +340,7 @@
       </div>
 
       <div class="footer-hint">
-        <span id="footer-hint-text">Click 'View Extracted Coffee' to reveal specs · Drag to orbit 3D bean · PBR Silver Grey Finish</span>
+        <span id="footer-hint-text">Select machine model above · Drag or hover to tilt & wobble view · Click 'View Extracted Coffee' for specs</span>
       </div>
     </footer>
 

@@ -4,7 +4,7 @@
    ========================================================================== */
 
 const DB_NAME = 'ExtractedBeansDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'extractions';
 
 // Default Seed Data: 6 Curated Specialty Coffee Extractions
@@ -121,6 +121,25 @@ export const DEFAULT_EXTRACTIONS = [
     ratio: '1:2.2',
     tds: '1.40%',
     notes: ['Floral Jasmine', 'Apricot', 'Meyer Lemon'],
+    timestamp: Date.now() - 50000
+  },
+  {
+    roast: 'titanium',
+    brandName: 'Coffee.',
+    roastEdition: 'Medium Roast · 100% Australian Roasted',
+    originRegion: '100% Australian Roasted Blend',
+    imageSrc: 'assets/brands/coffee.svg',
+    grindSize: 'Medium (600 µm)',
+    grindDetail: '25 Clicks · Precision Steel Conical',
+    grindAmount: '18.5 g',
+    doseDetail: 'Balanced Medium Roast (18.5g in)',
+    extractedWeight: '37.0 g',
+    yieldDetail: 'Velvety Crema Yield (1:2.0)',
+    brewTime: '28s',
+    brewTemp: '93.0°C',
+    ratio: '1:2.0',
+    tds: '1.36%',
+    notes: ['Milk Chocolate', 'Hazelnut', 'Caramel', 'Toffee', 'Hint of Raisin'],
     timestamp: Date.now()
   }
 ];
@@ -148,7 +167,7 @@ export function openDatabase() {
 
     request.onsuccess = (event) => {
       dbInstance = event.target.result;
-      // Ensure seed data is present if newly opened database is empty
+      // Ensure seed data is present if newly opened database is empty or missing curated brands
       checkAndSeedDatabase(dbInstance).then(() => {
         resolve(dbInstance);
       }).catch(reject);
@@ -162,7 +181,7 @@ export function openDatabase() {
 }
 
 /**
- * Seed database with default extractions if empty
+ * Seed database with default extractions if empty or sync missing default brands
  */
 async function checkAndSeedDatabase(db) {
   const count = await getExtractionCount(db);
@@ -171,6 +190,24 @@ async function checkAndSeedDatabase(db) {
     const store = tx.objectStore(STORE_NAME);
     DEFAULT_EXTRACTIONS.forEach(item => store.add({ ...item }));
     return new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } else {
+    // Seamlessly add any newly added default curated brands (such as Coffee.) without affecting user extractions
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const existing = req.result || [];
+        const existingBrands = new Set(existing.map(x => x.brandName));
+        DEFAULT_EXTRACTIONS.forEach(item => {
+          if (!existingBrands.has(item.brandName)) {
+            store.add({ ...item });
+          }
+        });
+      };
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });

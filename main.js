@@ -24,11 +24,18 @@ const GROUND_Y = -1.0; // Precise ground level for level seating
 
 // Scene Core Variables
 let scene, camera, renderer, model, beanGroup, groundMesh, shadowMesh;
-let keyLight, fillLight, rimLight, ambientLight;
+let keyLight, fillLight, rimLight, ambientLight, hemisphereLight, frontLight;
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
-let targetRotation = { x: 0.2, y: 0 };
-let mouseParallax = { x: 0, y: 0 };
+
+// Wobble & Movement Limits (Dual-axis bounded tilt with elastic spring-back)
+const BASE_ROTATION_Y = 0.0; // Straight front 90 degrees to camera
+const BASE_ROTATION_X = 0.0;
+const MAX_TILT_Y = 0.26; // ~15 degrees max horizontal wobble
+const MAX_TILT_X = 0.14; // ~8 degrees max vertical tilt
+
+let dragTilt = { x: 0, y: 0 };
+let hoverTilt = { x: 0, y: 0 };
 let currentRoast = 'silver';
 let audioEnabled = false;
 let audioCtx = null;
@@ -200,10 +207,10 @@ function initThree() {
   scene.background = new THREE.Color(0xf9f8f6);
   scene.fog = new THREE.FogExp2(0xf9f8f6, 0.036);
 
-  // 2. Camera setup with defaultZ, lifted to provide downward viewing angle
+  // 2. Camera setup with defaultZ, eye-level straight front 90 degrees
   camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 1.8, defaultZ);
-  camera.lookAt(0, 0.1, 0);
+  camera.position.set(0, 0.2, defaultZ);
+  camera.lookAt(0, 0.2, 0);
 
   // 3. Renderer & PBR Studio Environment
   renderer = new THREE.WebGLRenderer({
@@ -223,7 +230,7 @@ function initThree() {
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
   pmremGenerator.compileEquirectangularShader();
   const roomEnv = new RoomEnvironment();
-  scene.environment = pmremGenerator.fromScene(roomEnv, 0.04).texture;
+  scene.environment = pmremGenerator.fromScene(roomEnv).texture;
 
   // 4. Lighting Rig
   setupLighting();
@@ -235,46 +242,77 @@ function initThree() {
   // 6. Interaction Handlers
   setupInteractivity();
 
-  // 7. Load 3D Model with Fallback Pipeline
-  loadCentralModel();
+  // 7. Load 3D Model with Fallback Pipeline (Default: Breville Barista Express)
+  loadModel(currentModelId);
 
   // 8. Render Loop
   animate(0);
 }
 
 /* ==========================================================================
-   Studio Lighting Setup (Soft Nordic Daylight & Caramel Accents)
+   Studio Lighting Setup (Balanced Multi-Angle Studio Illumination)
+   Ensures front dials, gauges, portafilter, and metal body are vividly lit
    ========================================================================== */
 function setupLighting() {
-  // Ambient Soft Daylight (#F9F8F6)
-  ambientLight = new THREE.AmbientLight(0xf9f8f6, 2.0);
+  // Ambient Soft Daylight
+  ambientLight = new THREE.AmbientLight(0xfffdfa, 2.2);
   scene.add(ambientLight);
 
+  // Hemisphere Light for natural soft sky/ground bounce
+  hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xd9cfc7, 1.2);
+  hemisphereLight.position.set(0, 10, 0);
+  scene.add(hemisphereLight);
+
   // Key Light (Warm daylight from upper right #FFF7EC)
-  keyLight = new THREE.DirectionalLight(0xfff7ec, 2.8);
-  keyLight.position.set(4, 5, 4);
+  keyLight = new THREE.DirectionalLight(0xfff7ec, 3.2);
+  keyLight.position.set(4, 6, 4);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.width = 1024;
-  keyLight.shadow.mapSize.height = 1024;
-  keyLight.shadow.bias = -0.001;
+  keyLight.shadow.mapSize.width = 2048;
+  keyLight.shadow.mapSize.height = 2048;
+  keyLight.shadow.bias = -0.0005;
+  keyLight.shadow.normalBias = 0.02;
   scene.add(keyLight);
 
   // Rim Light (Warm caramel rim highlighting silhouette #C9B59C)
-  rimLight = new THREE.DirectionalLight(0xc9b59c, 2.8);
-  rimLight.position.set(-4, -2, -3.5);
+  rimLight = new THREE.DirectionalLight(0xc9b59c, 2.4);
+  rimLight.position.set(-4, 2, -4);
   scene.add(rimLight);
 
-  // Top Fill Light (Soft neutral oat bounce #EFE9E3)
-  fillLight = new THREE.DirectionalLight(0xefe9e3, 1.8);
-  fillLight.position.set(-3, 4, 2);
+  // Top/Side Fill Light (Soft neutral oat bounce #EFE9E3)
+  fillLight = new THREE.DirectionalLight(0xefe9e3, 2.0);
+  fillLight.position.set(-3, 4, 3);
   scene.add(fillLight);
+
+  // Front Fill Light directly illuminating buttons, dials, gauges, and portafilter
+  frontLight = new THREE.DirectionalLight(0xffffff, 1.6);
+  frontLight.position.set(0, 2.5, 6);
+  scene.add(frontLight);
 }
 
 /* ==========================================================================
-   3D Model Loader Pipeline (GLTFLoader + DRACOLoader + Bounding Normalization)
-   High-performance glTF streaming with Draco geometry decompression
+   3D Model Loader Pipeline (GLTFLoader + DRACOLoader + Normalization)
+   Supports instant cached switching between Breville Barista Express & Classic Espresso
    ========================================================================== */
-const MODEL_PATH = 'assets/coffee_bean.glb';
+const MODELS_CONFIG = {
+  breville: {
+    id: 'breville',
+    name: 'Breville Barista Express',
+    path: 'assets/Breville Barista Express.glb',
+    telemetryName: 'BREVILLE BARISTA EXPRESS',
+    description: 'Specialty Espresso Machine with Integrated Conical Burr Grinder'
+  },
+  classic: {
+    id: 'classic',
+    name: 'Classic Espresso Machine',
+    path: 'assets/coffee_bean.glb',
+    telemetryName: 'CLASSIC ESPRESSO MACHINE',
+    description: 'Classic Commercial Espresso Machine'
+  }
+};
+
+let currentModelId = 'breville';
+const modelCache = new Map();
+let isModelLoading = false;
 let modelSource = 'INITIALIZING';
 
 function updateLoaderUI(percent, statusText) {
@@ -309,88 +347,143 @@ function updateModelSourceTelemetry(text) {
   if (srcEl) {
     srcEl.textContent = text;
   }
+  const statusEl = document.getElementById('system-status-text');
+  if (statusEl) {
+    statusEl.textContent = `MODEL: ${text.toUpperCase()}`;
+  }
 }
 
 /* ==========================================================================
-   Reflective Metal Material Finish
-   Applies a liquid chrome / mirror reflective metallic finish
+   Model Scene Preparation & Normalization
+   Preserves authentic PBR textures, materials, and maps from the GLB files
    ========================================================================== */
-function applyReflectiveMetalFinish(target) {
-  if (!target) return;
-  target.traverse((child) => {
+function prepareModelScene(importedScene) {
+  importedScene.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true;
       child.receiveShadow = true;
-      
-      const reflectiveMat = new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(0xf0f4f8),       // Polished liquid chrome
-        metalness: 0.98,                        // Pure metallic reflection
-        roughness: 0.08,                        // High specular mirror finish
-        clearcoat: 0.50,                        // Deep clearcoat gloss
-        clearcoatRoughness: 0.06,
-        reflectivity: 1.0,
-        envMapIntensity: 1.6
+
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach((mat) => {
+        if (mat) {
+          mat.needsUpdate = true;
+          // Ensure color textures are sRGB
+          if (mat.map) {
+            mat.map.colorSpace = THREE.SRGBColorSpace;
+          }
+          if (mat.emissiveMap) {
+            mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+          }
+          // Enable realistic envMap reflections on metallic / glossy surfaces
+          if ('envMapIntensity' in mat) {
+            mat.envMapIntensity = 1.2;
+          }
+        }
       });
-      child.material = reflectiveMat;
-      child.material.needsUpdate = true;
     }
   });
+}
+
+function createNormalizedModelPivot(importedScene) {
+  const box = new THREE.Box3().setFromObject(importedScene);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+
+  // Target max dimension ~2.4 units to fill camera view at Z=5
+  const targetScale = maxDim > 0.0001 ? 2.4 / maxDim : 1.0;
+
+  // Align base (box.min.y) exactly to Y=0, and center X/Z at 0
+  const pivot = new THREE.Group();
+  importedScene.position.set(-center.x, -box.min.y, -center.z);
+  pivot.add(importedScene);
+  pivot.scale.setScalar(targetScale);
+
+  // Position base evenly on ground plane at GROUND_Y
+  pivot.position.set(0, GROUND_Y, 0);
+  // Straight front 90 degrees facing camera
+  pivot.rotation.set(0, BASE_ROTATION_Y, 0);
+
+  return pivot;
 }
 
 /* ==========================================================================
-   Material Finish Application (Traverses mesh hierarchy with GSAP)
+   Roast Profile Light Transition (Subtle Ambient / Key Light Atmosphere)
    ========================================================================== */
 function applyRoastToModel(target, profile) {
-  if (!target || !profile) return;
+  if (!profile) return;
 
-  target.traverse((child) => {
-    if (child.isMesh && child.material) {
-      const materials = Array.isArray(child.material) ? child.material : [child.material];
-      materials.forEach((mat) => {
-        if (mat.color && profile.color !== undefined) {
-          gsap.to(mat.color, {
-            r: new THREE.Color(profile.color).r,
-            g: new THREE.Color(profile.color).g,
-            b: new THREE.Color(profile.color).b,
-            duration: 1.2,
-            ease: "power2.out"
-          });
-        }
-        if (mat.roughness !== undefined && profile.roughness !== undefined) {
-          gsap.to(mat, {
-            roughness: profile.roughness,
-            metalness: profile.metalness ?? mat.metalness,
-            clearcoat: profile.clearcoat ?? (mat.clearcoat || 0),
-            duration: 1.2
-          });
-        }
-        if (mat.sheenColor && profile.sheenColor !== undefined) {
-          gsap.to(mat.sheenColor, {
-            r: new THREE.Color(profile.sheenColor).r,
-            g: new THREE.Color(profile.sheenColor).g,
-            b: new THREE.Color(profile.sheenColor).b,
-            duration: 1.2
-          });
-        }
-      });
-    }
-  });
+  // Tint key light and rim light with smooth GSAP transition
+  if (keyLight && profile.lightColor) {
+    gsap.to(keyLight.color, {
+      r: new THREE.Color(profile.lightColor).r,
+      g: new THREE.Color(profile.lightColor).g,
+      b: new THREE.Color(profile.lightColor).b,
+      duration: 1.2
+    });
+  }
+  if (rimLight && profile.sheenColor) {
+    gsap.to(rimLight.color, {
+      r: new THREE.Color(profile.sheenColor).r,
+      g: new THREE.Color(profile.sheenColor).g,
+      b: new THREE.Color(profile.sheenColor).b,
+      duration: 1.2
+    });
+  }
+
+  // Only apply procedural material tinting if using procedural fallback bean
+  if (modelSource && modelSource.startsWith('PROCEDURAL') && target) {
+    target.traverse((child) => {
+      if (child.isMesh && child.material) {
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((mat) => {
+          if (mat.color && profile.color !== undefined) {
+            gsap.to(mat.color, {
+              r: new THREE.Color(profile.color).r,
+              g: new THREE.Color(profile.color).g,
+              b: new THREE.Color(profile.color).b,
+              duration: 1.2,
+              ease: "power2.out"
+            });
+          }
+        });
+      }
+    });
+  }
 }
 
-function loadCentralModel() {
-  updateLoaderUI(10, `Checking for ${MODEL_PATH}...`);
+function loadModel(modelId) {
+  const config = MODELS_CONFIG[modelId];
+  if (!config) return;
 
   if (!beanGroup) {
     beanGroup = new THREE.Group();
     scene.add(beanGroup);
   }
 
+  // Check in-memory cache for instant switching
+  if (modelCache.has(modelId)) {
+    const cachedPivot = modelCache.get(modelId);
+    replaceActiveModel(cachedPivot, config);
+    updateModelSourceTelemetry(config.telemetryName);
+    finishLoaderUI(true, `${config.name} Ready`);
+    return;
+  }
+
+  if (isModelLoading) return;
+  isModelLoading = true;
+
+  updateLoaderUI(10, `Streaming ${config.name}...`);
+  const loaderOverlay = document.getElementById('model-loader');
+  if (loaderOverlay) {
+    loaderOverlay.classList.remove('loaded');
+  }
+
   // Setup LoadingManager and DRACOLoader
   const manager = new THREE.LoadingManager();
-  
   manager.onProgress = (item, loaded, total) => {
     const percent = Math.min(95, Math.round((loaded / total) * 100));
-    updateLoaderUI(percent, `Streaming assets (${loaded}/${total})...`);
+    updateLoaderUI(percent, `Streaming ${config.name} (${Math.round(percent)}%)...`);
   };
 
   const dracoLoader = new DRACOLoader(manager);
@@ -401,73 +494,95 @@ function loadCentralModel() {
   gltfLoader.setDRACOLoader(dracoLoader);
 
   gltfLoader.load(
-    MODEL_PATH,
+    config.path,
     (gltf) => {
-      console.log('Successfully loaded 3D GLB model:', MODEL_PATH);
-
-      if (model && beanGroup.children.includes(model)) {
-        beanGroup.remove(model);
-      }
-
+      console.log('Successfully loaded 3D GLB model:', config.path);
       const importedScene = gltf.scene;
 
-      // Compute bounding box and normalize scale & pivot
-      const box = new THREE.Box3().setFromObject(importedScene);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
+      // Preserve authentic materials and setup shadows
+      prepareModelScene(importedScene);
+      const pivot = createNormalizedModelPivot(importedScene);
 
-      // Target max dimension ~2.4 units to fill camera view at Z=5
-      const targetScale = maxDim > 0.0001 ? 2.4 / maxDim : 1.0;
+      // Cache normalized model in memory
+      modelCache.set(modelId, pivot);
 
-      // Align base of bean (box.min.y) exactly to Y=0, and center X/Z at 0
-      const pivot = new THREE.Group();
-      importedScene.position.set(-center.x, -box.min.y, -center.z);
-      pivot.add(importedScene);
-      pivot.scale.setScalar(targetScale);
-      
-      // Position base evenly on ground plane at GROUND_Y
-      // Keep X=0 and Z=0 so the bean sits completely level and flat on the ground!
-      // Rotate around Y (-Math.PI / 4) for the 3/4 view
-      pivot.position.set(0, GROUND_Y, 0);
-      pivot.rotation.set(0, -Math.PI / 4, 0);
-
-      // Apply reflective metal finish (liquid chrome)
-      applyReflectiveMetalFinish(pivot);
-
-      model = pivot;
-      beanGroup.add(model);
-
-      modelSource = 'GLB (assets/coffee_bean.glb)';
-      updateModelSourceTelemetry(modelSource);
-      finishLoaderUI(true, 'GLB Model Loaded');
-
-      // Trigger elegant 3/4 view fade-in entrance
-      playModelFadeInAnimation();
+      replaceActiveModel(pivot, config);
+      modelSource = `GLB (${config.path})`;
+      updateModelSourceTelemetry(config.telemetryName);
+      finishLoaderUI(true, `${config.name} Loaded`);
+      isModelLoading = false;
     },
     (xhr) => {
       if (xhr.lengthComputable && xhr.total > 0) {
         const percent = Math.min(95, Math.round((xhr.loaded / xhr.total) * 100));
-        updateLoaderUI(percent, `Downloading ${Math.round(xhr.loaded / 1024)} KB...`);
+        const loadedMB = (xhr.loaded / (1024 * 1024)).toFixed(1);
+        const totalMB = (xhr.total / (1024 * 1024)).toFixed(1);
+        updateLoaderUI(percent, `Downloading ${config.name} (${loadedMB}MB / ${totalMB}MB)...`);
       }
     },
     (error) => {
-      console.warn(`Could not load ${MODEL_PATH} (${error.message || 'File not found'}), activating procedural coffee bean fallback.`);
+      console.warn(`Could not load ${config.path} (${error.message || 'File not found'}), activating procedural fallback.`);
+      isModelLoading = false;
 
       if (model && beanGroup.children.includes(model)) {
         beanGroup.remove(model);
       }
 
       createCoffeeBeanModel();
-
-      modelSource = 'PROCEDURAL (Ready for assets/coffee_bean.glb)';
+      modelSource = `PROCEDURAL (Fallback for ${config.name})`;
       updateModelSourceTelemetry(modelSource);
-      finishLoaderUI(false, 'Using Procedural Bean (Place coffee_bean.glb in assets/)');
-
-      // Trigger elegant 3/4 view fade-in entrance
+      finishLoaderUI(false, `Procedural Model Active`);
       playModelFadeInAnimation();
     }
   );
+}
+
+function replaceActiveModel(newPivot, config) {
+  if (model && beanGroup.children.includes(model)) {
+    const oldModel = model;
+    gsap.to(oldModel.scale, {
+      x: oldModel.scale.x * 0.88,
+      y: oldModel.scale.y * 0.88,
+      z: oldModel.scale.z * 0.88,
+      duration: 0.25,
+      ease: "power2.in",
+      onComplete: () => {
+        if (beanGroup && beanGroup.children.includes(oldModel)) {
+          beanGroup.remove(oldModel);
+        }
+      }
+    });
+  }
+
+  model = newPivot;
+  beanGroup.add(model);
+
+  playModelFadeInAnimation();
+}
+
+function switchModel(targetModelId) {
+  if (targetModelId === currentModelId && model) return;
+  currentModelId = targetModelId;
+
+  // Update switcher UI buttons active state
+  const brevilleBtn = document.getElementById('btn-model-breville');
+  const classicBtn = document.getElementById('btn-model-classic');
+
+  if (brevilleBtn && classicBtn) {
+    if (targetModelId === 'breville') {
+      brevilleBtn.classList.add('is-active');
+      brevilleBtn.setAttribute('aria-selected', 'true');
+      classicBtn.classList.remove('is-active');
+      classicBtn.setAttribute('aria-selected', 'false');
+    } else {
+      classicBtn.classList.add('is-active');
+      classicBtn.setAttribute('aria-selected', 'true');
+      brevilleBtn.classList.remove('is-active');
+      brevilleBtn.setAttribute('aria-selected', 'false');
+    }
+  }
+
+  loadModel(targetModelId);
 }
 
 /* ==========================================================================
@@ -555,7 +670,7 @@ function createCoffeeBeanModel() {
   model.receiveShadow = true;
   model.scale.set(1.2, 1.2, 1.2);
   model.position.set(0, GROUND_Y + 0.85, 0);
-  model.rotation.set(0, -Math.PI / 4, 0);
+  model.rotation.set(0, BASE_ROTATION_Y, 0);
 
   beanGroup.add(model);
 }
@@ -718,12 +833,20 @@ function playModelFadeInAnimation() {
     if (child.isMesh && child.material) {
       const mats = Array.isArray(child.material) ? child.material : [child.material];
       mats.forEach((mat) => {
+        if (mat.userData.wasTransparent === undefined) {
+          mat.userData.wasTransparent = mat.transparent;
+        }
         mat.transparent = true;
         mat.opacity = 0;
         fadeTl.to(mat, {
           opacity: 1,
-          duration: 1.8,
-          ease: "power2.out"
+          duration: 1.4,
+          ease: "power2.out",
+          onComplete: () => {
+            if (!mat.userData.wasTransparent) {
+              mat.transparent = false;
+            }
+          }
         }, 0);
       });
     }
@@ -1064,8 +1187,9 @@ async function toggleExtractedView(forceState) {
 
     if (model) {
       tl.to(model.rotation, {
-        y: model.rotation.y + Math.PI * 2,
-        duration: 1.6,
+        y: BASE_ROTATION_Y - 0.08,
+        x: 0,
+        duration: 1.4,
         ease: "power3.inOut"
       }, 0);
     }
@@ -1130,7 +1254,8 @@ async function toggleExtractedView(forceState) {
 
     if (model) {
       tl.to(model.rotation, {
-        y: model.rotation.y - Math.PI * 2,
+        y: BASE_ROTATION_Y,
+        x: 0,
         duration: 1.4,
         ease: "power3.inOut"
       }, 0);
@@ -1177,8 +1302,9 @@ function toggleMacroZoom(forceState) {
 
     if (model) {
       tl.to(model.rotation, {
-        y: model.rotation.y + Math.PI * 2,
-        duration: 1.8,
+        y: BASE_ROTATION_Y + 0.05,
+        x: 0,
+        duration: 1.4,
         ease: "power2.inOut"
       }, 0);
     }
@@ -1196,8 +1322,9 @@ function toggleMacroZoom(forceState) {
 
     if (model) {
       tl.to(model.rotation, {
-        y: model.rotation.y - Math.PI * 2,
-        duration: 1.6,
+        y: BASE_ROTATION_Y,
+        x: 0,
+        duration: 1.4,
         ease: "power2.inOut"
       }, 0);
     }
@@ -1312,20 +1439,22 @@ function setupInteractivity() {
     startY = e.clientY;
     dragDist = 0;
     previousMousePosition = { x: e.clientX, y: e.clientY };
+    gsap.killTweensOf(dragTilt);
   });
 
   window.addEventListener('mousemove', (e) => {
-    // Parallax
-    mouseParallax.x = (e.clientX / window.innerWidth - 0.5) * 0.4;
-    mouseParallax.y = (e.clientY / window.innerHeight - 0.5) * 0.4;
+    // Subtle cursor hover parallax wobble across the viewport
+    hoverTilt.x = ((e.clientX / window.innerWidth) - 0.5) * (MAX_TILT_Y * 0.55);
+    hoverTilt.y = ((e.clientY / window.innerHeight) - 0.5) * (MAX_TILT_X * 0.55);
 
     if (isDragging && model) {
       const deltaX = e.clientX - previousMousePosition.x;
       const deltaY = e.clientY - previousMousePosition.y;
       dragDist += Math.abs(deltaX) + Math.abs(deltaY);
 
-      model.rotation.y += deltaX * 0.008;
-      model.rotation.x += deltaY * 0.008;
+      // Accumulate drag tilt bounded strictly within limits
+      dragTilt.x = THREE.MathUtils.clamp(dragTilt.x + deltaX * 0.003, -MAX_TILT_Y, MAX_TILT_Y);
+      dragTilt.y = THREE.MathUtils.clamp(dragTilt.y + deltaY * 0.003, -MAX_TILT_X, MAX_TILT_X);
 
       previousMousePosition = { x: e.clientX, y: e.clientY };
       updateTelemetry();
@@ -1335,6 +1464,14 @@ function setupInteractivity() {
   window.addEventListener('mouseup', (e) => {
     if (isDragging) {
       isDragging = false;
+      // Smooth elastic damped return back to center resting angle
+      gsap.to(dragTilt, {
+        x: 0,
+        y: 0,
+        duration: 1.2,
+        ease: "elastic.out(1, 0.4)"
+      });
+
       // Single clean click on canvas (not a drag)
       if (dragDist < 6 && e.target === canvas) {
         createClickRipple(e);
@@ -1344,6 +1481,15 @@ function setupInteractivity() {
         }
       }
     }
+  });
+
+  window.addEventListener('mouseleave', () => {
+    gsap.to(hoverTilt, {
+      x: 0,
+      y: 0,
+      duration: 0.8,
+      ease: "power2.out"
+    });
   });
 
   // Touch drag for mobile devices
@@ -1358,6 +1504,7 @@ function setupInteractivity() {
       touchStartY = e.touches[0].clientY;
       touchDist = 0;
       previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      gsap.killTweensOf(dragTilt);
     }
   }, { passive: true });
 
@@ -1367,8 +1514,8 @@ function setupInteractivity() {
       const deltaY = e.touches[0].clientY - previousMousePosition.y;
       touchDist += Math.abs(deltaX) + Math.abs(deltaY);
 
-      model.rotation.y += deltaX * 0.008;
-      model.rotation.x += deltaY * 0.008;
+      dragTilt.x = THREE.MathUtils.clamp(dragTilt.x + deltaX * 0.003, -MAX_TILT_Y, MAX_TILT_Y);
+      dragTilt.y = THREE.MathUtils.clamp(dragTilt.y + deltaY * 0.003, -MAX_TILT_X, MAX_TILT_X);
 
       previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       updateTelemetry();
@@ -1378,6 +1525,12 @@ function setupInteractivity() {
   window.addEventListener('touchend', (e) => {
     if (isDragging) {
       isDragging = false;
+      gsap.to(dragTilt, {
+        x: 0,
+        y: 0,
+        duration: 1.2,
+        ease: "elastic.out(1, 0.4)"
+      });
       if (touchDist < 10) {
         if (isExtractedView) {
           toggleExtractedView(false);
@@ -1554,6 +1707,24 @@ function setupInteractivity() {
     });
   });
 
+  // 3D Model Switcher Buttons
+  const brevilleBtn = document.getElementById('btn-model-breville');
+  const classicBtn = document.getElementById('btn-model-classic');
+
+  if (brevilleBtn) {
+    brevilleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      switchModel('breville');
+    });
+  }
+
+  if (classicBtn) {
+    classicBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      switchModel('classic');
+    });
+  }
+
   // Replay Fade-in Button
   const replayBtn = document.getElementById('btn-replay-fade') || document.getElementById('btn-replay-drop');
   if (replayBtn) {
@@ -1629,9 +1800,21 @@ function onWindowResize() {
 function animate(time) {
   requestAnimationFrame(animate);
 
-  // Keep camera tilted downwards focusing at bean center
+  // Keep camera facing straight front at machine center (Y=0.2)
   if (camera) {
-    camera.lookAt(0, 0.1, 0);
+    camera.lookAt(0, 0.2, 0);
+  }
+
+  // Dual-axis bounded wobble tilt
+  if (model && !gsap.isTweening(model.rotation)) {
+    const combinedY = THREE.MathUtils.clamp(dragTilt.x + (isDragging ? 0 : hoverTilt.x), -MAX_TILT_Y, MAX_TILT_Y);
+    const combinedX = THREE.MathUtils.clamp(dragTilt.y + (isDragging ? 0 : hoverTilt.y), -MAX_TILT_X, MAX_TILT_X);
+
+    const targetRotY = BASE_ROTATION_Y + combinedY;
+    const targetRotX = BASE_ROTATION_X + combinedX;
+
+    model.rotation.y = THREE.MathUtils.lerp(model.rotation.y, targetRotY, isDragging ? 0.22 : 0.08);
+    model.rotation.x = THREE.MathUtils.lerp(model.rotation.x, targetRotX, isDragging ? 0.22 : 0.08);
   }
 
   // Update HUD

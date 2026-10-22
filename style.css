@@ -351,8 +351,9 @@ a,
   margin-top: 2px;
 }
 
-/* Macro Inspection Panel (Transitions smoothly in when zoomed) */
+/* Macro Inspection Panel (Hidden) */
 .macro-panel {
+  display: none !important;
   position: absolute;
   top: 96px;
   right: 36px;
@@ -1170,6 +1171,109 @@ a,
   width: 100%;
 }
 
+/* ==========================================================================
+   Floating Segmented 3D Model Switcher Bar
+   ========================================================================== */
+.model-switcher-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2px;
+  z-index: 5;
+}
+
+.model-switcher-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid var(--border-caramel);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-medium);
+  transition: var(--transition-smooth);
+}
+
+.model-switcher-pill:hover {
+  border-color: var(--accent-caramel);
+  box-shadow: var(--shadow-elevated);
+}
+
+.model-switch-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.model-switch-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.model-switch-btn.is-active {
+  background: linear-gradient(135deg, #241B16, #3B2D25);
+  color: #F9F8F6;
+  border-color: var(--accent-caramel);
+  box-shadow: 0 4px 14px rgba(36, 27, 22, 0.28);
+}
+
+.model-switch-btn.is-active .machine-icon {
+  stroke: var(--accent-caramel);
+}
+
+.model-switch-btn .machine-icon {
+  stroke: var(--accent-caramel-deep);
+  transition: stroke 0.3s ease;
+  flex-shrink: 0;
+}
+
+.model-badge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  background: rgba(201, 181, 156, 0.28);
+  color: var(--accent-caramel-deep);
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.model-switch-btn.is-active .model-badge {
+  background: var(--accent-caramel);
+  color: #241B16;
+}
+
+@media (max-width: 640px) {
+  .model-switcher-pill {
+    padding: 4px;
+    gap: 4px;
+    max-width: 95vw;
+  }
+  .model-switch-btn {
+    padding: 6px 12px;
+    font-size: 0.72rem;
+    gap: 6px;
+  }
+  .model-badge {
+    display: none;
+  }
+}
+
 .bottom-actions-container {
   display: flex;
   align-items: center;
@@ -1295,9 +1399,9 @@ a,
   letter-spacing: 0.08em;
 }
 
-/* Secondary Button: 2.5X Macro Zoom */
+/* Secondary Button: 2.5X Macro Zoom (Hidden) */
 .secondary-macro-pill {
-  display: flex;
+  display: none !important;
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
