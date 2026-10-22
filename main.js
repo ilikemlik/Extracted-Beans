@@ -40,8 +40,6 @@ let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
 let animationFrameId = null;
 let isContextLost = false;
-let forceSilhouetteMode = false;
-let masterModelScene = null;
 
 // Wobble & Movement Limits (Dual-axis bounded tilt with elastic spring-back)
 const BASE_ROTATION_Y = 0.0; // Straight front 90 degrees to camera
@@ -212,10 +210,50 @@ const extractionData = {
 };
 
 /* ==========================================================================
-   Initialize Three.js World
+   Initialize Visual Experience (Desktop 3D vs Mobile 2D Studio)
    ========================================================================== */
-function initThree() {
+function initExperience() {
+  setupInteractivity();
+
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    // Mobile View: 100% Lightweight 2D Studio Product Showcase (Zero WebGL, Zero Crash)
+    initMobileStudio();
+    toggleExtractedView(true, true);
+  } else {
+    // Desktop View: High-fidelity Three.js 3D Interactive Lab
+    initDesktopThree();
+  }
+}
+
+function initMobileStudio() {
+  const loaderOverlay = document.getElementById('model-loader');
+  if (loaderOverlay) {
+    loaderOverlay.classList.add('loaded');
+  }
+  updateMobileShowcaseImage(currentModelId);
+  updateModelSourceTelemetry(MODELS_CONFIG[currentModelId].telemetryName);
+}
+
+function updateMobileShowcaseImage(modelId) {
+  const brevilleImg = document.getElementById('mobile-img-breville');
+  const classicImg = document.getElementById('mobile-img-classic');
+  const undiscoveredBadge = document.getElementById('mobile-undiscovered-badge');
+
+  if (modelId === 'classic') {
+    if (brevilleImg) brevilleImg.classList.remove('active');
+    if (classicImg) classicImg.classList.add('active');
+    if (undiscoveredBadge) undiscoveredBadge.classList.add('visible');
+  } else {
+    if (classicImg) classicImg.classList.remove('active');
+    if (brevilleImg) brevilleImg.classList.add('active');
+    if (undiscoveredBadge) undiscoveredBadge.classList.remove('visible');
+  }
+}
+
+function initDesktopThree() {
   const canvas = document.getElementById('webgl-canvas');
+  if (!canvas) return;
 
   // 1. Scene & Atmospheric Fog (Centering around #F9F8F6)
   scene = new THREE.Scene();
@@ -236,8 +274,7 @@ function initThree() {
     powerPreference: "high-performance"
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  const maxPixelRatio = window.innerWidth <= 768 ? 1.25 : 1.75;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = true;
@@ -262,19 +299,10 @@ function initThree() {
     scene.add(beanGroup);
   }
 
-  // 6. Interaction Handlers
-  setupInteractivity();
-
-  // Mobile Experience: Open recipe drawer upfront if on mobile
-  const isMobile = window.innerWidth <= 768;
-  if (isMobile) {
-    toggleExtractedView(true, true);
-  }
-
-  // 7. Load 3D Model with Fallback Pipeline in background (Default: Breville Barista Express)
+  // 6. Load 3D Model in background (Default: Breville Barista Express)
   loadModel(currentModelId);
 
-  // 8. Render Loop
+  // 7. Render Loop
   animate(0);
 }
 
@@ -296,8 +324,8 @@ function setupLighting() {
   keyLight = new THREE.DirectionalLight(0xfff7ec, 3.2);
   keyLight.position.set(4, 6, 4);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.width = 1024;
-  keyLight.shadow.mapSize.height = 1024;
+  keyLight.shadow.mapSize.width = 2048;
+  keyLight.shadow.mapSize.height = 2048;
   keyLight.shadow.bias = -0.0005;
   keyLight.shadow.normalBias = 0.02;
   scene.add(keyLight);
@@ -330,11 +358,6 @@ function setupContextLossHandling(canvas) {
     event.preventDefault();
     isContextLost = true;
     console.warn('[WebGL] Context lost detected. Pausing render loop and awaiting GPU recovery.');
-
-    // If context ever drops on mobile, automatically fall back to silhouette mode for zero VRAM
-    if (window.innerWidth <= 768) {
-      forceSilhouetteMode = true;
-    }
 
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId);
@@ -390,21 +413,8 @@ function setupEnvironment() {
 }
 
 /* ==========================================================================
-   Adaptive Mobile Performance Detection
-   ========================================================================== */
-function isLowMemoryMobile() {
-  if (forceSilhouetteMode) return true;
-  const isMobile = window.innerWidth <= 768;
-  if (!isMobile) return false;
-  // Fall back to silhouette on mobile devices with constrained memory or low CPU concurrency
-  if (navigator.deviceMemory && navigator.deviceMemory <= 4) return true;
-  if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) return true;
-  return false;
-}
-
-/* ==========================================================================
-   3D Model Loader Pipeline (GLTFLoader + Normalization)
-   Shares single lightweight Breville model for both authentic PBR and stealth silhouette
+   3D Model Loader Pipeline (GLTFLoader + DRACOLoader + Normalization)
+   Desktop: Full 3D Breville Barista Express + Breville Dual Boiler Silhouette
    ========================================================================== */
 const MODELS_CONFIG = {
   breville: {
@@ -417,7 +427,7 @@ const MODELS_CONFIG = {
   classic: {
     id: 'classic',
     name: 'Breville Dual Boiler',
-    path: 'assets/Breville Barista Express.glb',
+    path: 'assets/Breville Dual Boiler.glb',
     telemetryName: 'BREVILLE DUAL BOILER',
     description: 'Dual Boiler Specialty Espresso Machine (Silhouette)'
   }
@@ -474,48 +484,22 @@ function updateModelSourceTelemetry(text) {
 
 /* ==========================================================================
    Model Scene Preparation & Normalization
-   - Preserves authentic PBR textures & maps for Breville Barista Express
-   - Applies deep matte stealth silhouette shader for Breville Dual Boiler (undiscovered)
+   - Applies deep matte stealth silhouette shader for Breville 3D models
    ========================================================================== */
 function prepareModelScene(importedScene, modelId) {
-  const isSilhouette = (modelId === 'classic') || isLowMemoryMobile();
-
-  // Deep matte silhouette material for undiscovered Breville Dual Boiler (matching screenshot 1)
-  const silhouetteMat = isSilhouette
-    ? new THREE.MeshStandardMaterial({
-      color: 0x141417, // Deep dark matte charcoal
-      roughness: 0.94,
-      metalness: 0.05,
-      flatShading: false
-    })
-    : null;
+  // Deep matte stealth charcoal silhouette material
+  const silhouetteMat = new THREE.MeshStandardMaterial({
+    color: 0x141417, // Deep dark matte charcoal
+    roughness: 0.92,
+    metalness: 0.08,
+    flatShading: false
+  });
 
   importedScene.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true;
       child.receiveShadow = true;
-
-      if (isSilhouette) {
-        child.material = silhouetteMat.clone();
-      } else {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((mat) => {
-          if (mat) {
-            mat.needsUpdate = true;
-            // Ensure color textures are sRGB
-            if (mat.map) {
-              mat.map.colorSpace = THREE.SRGBColorSpace;
-            }
-            if (mat.emissiveMap) {
-              mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
-            }
-            // Enable realistic envMap reflections on metallic / glossy surfaces
-            if ('envMapIntensity' in mat) {
-              mat.envMapIntensity = 1.2;
-            }
-          }
-        });
-      }
+      child.material = silhouetteMat.clone();
     }
   });
 }
@@ -703,19 +687,6 @@ function loadModel(modelId) {
     return;
   }
 
-  // Instant desktop model switching if base model is already in memory
-  if (masterModelScene) {
-    const clonedScene = masterModelScene.clone(true);
-    prepareModelScene(clonedScene, modelId);
-    const pivot = createNormalizedModelPivot(clonedScene);
-    modelCache.set(modelId, pivot);
-    replaceActiveModel(pivot, config);
-    updateUndiscoveredRingVisibility(modelId);
-    updateModelSourceTelemetry(config.telemetryName);
-    finishLoaderUI(true, `${config.name} Ready`);
-    return;
-  }
-
   if (isModelLoading) return;
   isModelLoading = true;
 
@@ -736,7 +707,7 @@ function loadModel(modelId) {
 
   const dracoLoader = new DRACOLoader(manager);
   dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-  dracoLoader.setDecoderConfig({ type: 'wasm' }); // High-performance WebAssembly decoder
+  dracoLoader.setDecoderConfig({ type: 'js' });
 
   const gltfLoader = new GLTFLoader(manager);
   gltfLoader.setDRACOLoader(dracoLoader);
@@ -745,7 +716,6 @@ function loadModel(modelId) {
     config.path,
     (gltf) => {
       console.log('Successfully loaded 3D GLB model:', config.path);
-      masterModelScene = gltf.scene.clone(true);
       const importedScene = gltf.scene;
 
       // Preserve authentic materials and setup shadows (or deep matte silhouette for Dual Boiler)
@@ -824,7 +794,6 @@ function replaceActiveModel(newPivot, config) {
 }
 
 function switchModel(targetModelId) {
-  if (targetModelId === currentModelId && model) return;
   currentModelId = targetModelId;
 
   // Update switcher UI buttons active state
@@ -845,7 +814,15 @@ function switchModel(targetModelId) {
     }
   }
 
-  loadModel(targetModelId);
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    // Mobile 2D Studio Image Cross-fade
+    updateMobileShowcaseImage(targetModelId);
+    updateModelSourceTelemetry(MODELS_CONFIG[targetModelId].telemetryName);
+  } else {
+    // Desktop 3D Model Stream
+    loadModel(targetModelId);
+  }
 
   // If extraction view is active, update recipe feed state
   if (isExtractedView) {
@@ -1573,6 +1550,9 @@ async function toggleExtractedView(forceState, isInstant = false) {
   if (model) gsap.killTweensOf(model.rotation);
 
   const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    document.body.classList.toggle('extracted-open-mobile', shouldOpen);
+  }
 
   if (shouldOpen) {
     // 1. Refresh extraction data feed from IndexedDB
@@ -2302,18 +2282,34 @@ function setupInteractivity() {
 }
 
 function onWindowResize() {
-  if (!camera || !renderer) return;
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+    updateMobileShowcaseImage(currentModelId);
+    return;
+  }
+
+  // Transitioning from mobile to desktop: lazily initialize Three.js
+  if (!renderer) {
+    initDesktopThree();
+    return;
+  }
+
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  const maxPixelRatio = window.innerWidth <= 768 ? 1.25 : 1.75;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
 
   // Maintain smooth responsive camera distance when resizing or rotating device
   if (!isZoomed && !isExtractedView) {
     camera.position.z = getResponsiveCameraZ();
-  } else if (isExtractedView && window.innerWidth <= 768) {
-    camera.position.z = getResponsiveCameraZ() * 1.05;
+  }
+
+  if (!animationFrameId && !isContextLost) {
+    animate(0);
   }
 }
 
@@ -2354,5 +2350,5 @@ function animate(time) {
   }
 }
 
-// Start Three.js when DOM is ready
-window.addEventListener('DOMContentLoaded', initThree);
+// Start experience when DOM is ready (Desktop 3D vs Mobile 2D Studio)
+window.addEventListener('DOMContentLoaded', initExperience);

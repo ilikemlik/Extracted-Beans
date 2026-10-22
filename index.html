@@ -32,8 +32,35 @@
 </head>
 <body>
 
-  <!-- WebGL Three.js Canvas Container -->
+  <!-- WebGL Three.js Canvas Container (Active on Desktop) -->
   <canvas id="webgl-canvas"></canvas>
+
+  <!-- Mobile Studio Product Showcase (Zero WebGL, Instantaneous 2D Studio Display) -->
+  <div class="mobile-showcase-container" id="mobile-showcase" aria-label="Espresso Machine Product Showcase">
+    <div class="mobile-showcase-stage">
+      <div class="mobile-showcase-image-wrapper" id="mobile-image-wrapper">
+        <img src="assets/breville_barista_express_mobile.png" 
+             alt="Breville Barista Express Espresso Machine" 
+             class="mobile-showcase-img active" 
+             id="mobile-img-breville" 
+             loading="eager"
+             decoding="async">
+        <img src="assets/breville_dual_boiler_mobile.png" 
+             alt="Breville Dual Boiler Espresso Machine" 
+             class="mobile-showcase-img" 
+             id="mobile-img-classic" 
+             loading="eager"
+             decoding="async">
+        
+        <!-- Animated Undiscovered Badge for Dual Boiler on Mobile -->
+        <div class="mobile-undiscovered-badge" id="mobile-undiscovered-badge" aria-hidden="true">
+          <span class="ribbon-text">✦ UNDISCOVERED ✦</span>
+        </div>
+      </div>
+      <!-- Soft Grounded Studio Contact Shadow -->
+      <div class="mobile-contact-shadow" id="mobile-contact-shadow"></div>
+    </div>
+  </div>
 
   <!-- 3D Model Loading HUD Overlay -->
   <div class="model-loader-overlay" id="model-loader" aria-live="polite">
