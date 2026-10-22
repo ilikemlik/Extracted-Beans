@@ -202,7 +202,7 @@ const extractionData = {
    ========================================================================== */
 function initThree() {
   const canvas = document.getElementById('webgl-canvas');
-  
+
   // 1. Scene & Atmospheric Fog (Centering around #F9F8F6)
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf9f8f6);
@@ -365,11 +365,11 @@ function prepareModelScene(importedScene, modelId) {
   // Deep matte silhouette material for undiscovered Breville Dual Boiler (matching screenshot 1)
   const silhouetteMat = isSilhouette
     ? new THREE.MeshStandardMaterial({
-        color: 0x141417, // Deep dark matte charcoal
-        roughness: 0.94,
-        metalness: 0.05,
-        flatShading: false
-      })
+      color: 0x141417, // Deep dark matte charcoal
+      roughness: 0.94,
+      metalness: 0.05,
+      flatShading: false
+    })
     : null;
 
   importedScene.traverse((child) => {
@@ -425,7 +425,7 @@ function createUndiscoveredTextRing() {
   ctx.textBaseline = 'middle';
 
   // Phrase around cylinder circumference
-  const phrase = "undiscovered - undiscovered - undiscovered - ";
+  const phrase = "UNDISCOVERED - UNDISCOVERED - UNDISCOVERED  ";
   ctx.fillText(phrase, canvas.width / 2, canvas.height / 2);
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -743,7 +743,7 @@ function createCoffeeBeanModel() {
       // Natural organic S-curve groove
       const centerS = Math.sin(y * 2.2) * 0.08 + Math.sin(y * 5.0) * 0.02;
       const distFromCenter = x - centerS;
-      
+
       // Crevice profile using Gaussian groove
       const cleftWidth = 0.18;
       const inGroove = Math.exp(-Math.pow(distFromCenter / cleftWidth, 2));
@@ -802,7 +802,7 @@ function createCoffeeBeanModel() {
    ========================================================================== */
 function generateCoffeeBeanTextures() {
   const size = 1024;
-  
+
   // 1. Diffuse / Albedo Canvas
   const diffuseCanvas = document.createElement('canvas');
   diffuseCanvas.width = size;
@@ -1013,7 +1013,7 @@ function playZoomSound(zoomingIn) {
   if (!audioEnabled || !audioCtx) return;
 
   const now = audioCtx.currentTime;
-  
+
   // Whoosh Oscillator
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
@@ -1070,7 +1070,7 @@ function playDropSound() {
 function updateTelemetry() {
   const camZ = camera ? camera.position.z.toFixed(2) : '5.00';
   const rotY = model ? ((model.rotation.y * 180 / Math.PI) % 360).toFixed(1) : '0.0';
-  
+
   const hudCamZ = document.getElementById('hud-cam-z');
   const hudRotY = document.getElementById('hud-rot-y');
   const hudMode = document.getElementById('hud-mode');
