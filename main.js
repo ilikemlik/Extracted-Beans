@@ -24,6 +24,7 @@ const GROUND_Y = -1.0; // Precise ground level for level seating
 // Scene Core Variables
 let scene, camera, renderer, model, beanGroup, groundMesh, shadowMesh;
 let undiscoveredTextRing = null;
+let undiscoveredRingGroup = null;
 let keyLight, fillLight, rimLight, ambientLight, hemisphereLight, frontLight;
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
@@ -403,11 +404,11 @@ function prepareModelScene(importedScene, modelId) {
 
 /* ==========================================================================
    3D Rotating Text Ring Ribbon ("COFFEE EXTRACTION INFORMATION UNDISCOVERED")
-   - High resolution double-sided transparent cylindrical ribbon
-   - Continuous 360-degree rotation around the machine's midsection
+   - Compact circular ribbon spinning in front of the coffee machine
+   - Double-sided transparent cylinder with perspective tilt matching reference
    ========================================================================== */
 function createUndiscoveredTextRing() {
-  if (undiscoveredTextRing) return undiscoveredTextRing;
+  if (undiscoveredRingGroup) return undiscoveredRingGroup;
 
   // 1. Render high-resolution text onto dynamic canvas
   const canvas = document.createElement('canvas');
@@ -417,14 +418,14 @@ function createUndiscoveredTextRing() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Bold geometric typography matching modern UI
+  // Bold geometric typography
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = '900 58px "Space Grotesk", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '900 80px "Space Grotesk", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Repeated phrase around cylinder circumference
-  const phrase = "UNDISCOVERED  •  COFFEE EXTRACTION INFORMATION  •  UNDISCOVERED  •  COFFEE EXTRACTION INFORMATION  •  ";
+  // Phrase around cylinder circumference
+  const phrase = "undiscovered - undiscovered - undiscovered - ";
   ctx.fillText(phrase, canvas.width / 2, canvas.height / 2);
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -433,54 +434,66 @@ function createUndiscoveredTextRing() {
   texture.anisotropy = 8;
   texture.needsUpdate = true;
 
-  // 2. Open-ended cylinder geometry hovering around waist of machine
-  const geometry = new THREE.CylinderGeometry(1.48, 1.48, 0.40, 64, 1, true);
+  // 2. Open-ended cylinder geometry - a lot smaller (radius 0.48 vs previous 1.48)
+  const radius = 0.48;
+  const height = 0.15;
+  const geometry = new THREE.CylinderGeometry(radius, radius, height, 64, 1, true);
 
   // DoubleSide is essential so the inside/rear letters show through mirrored, exactly like screenshot 2
   const material = new THREE.MeshBasicMaterial({
     map: texture,
     transparent: true,
-    opacity: 0.95,
+    opacity: 0.96,
     side: THREE.DoubleSide,
     depthWrite: false
   });
 
   undiscoveredTextRing = new THREE.Mesh(geometry, material);
   undiscoveredTextRing.name = 'undiscoveredTextRing';
-  undiscoveredTextRing.position.set(0, 0.15, 0);
-  undiscoveredTextRing.visible = false;
 
-  return undiscoveredTextRing;
+  // Parent group positioned floating IN FRONT of the coffee machine with forward perspective tilt
+  undiscoveredRingGroup = new THREE.Group();
+  undiscoveredRingGroup.name = 'undiscoveredRingGroup';
+  undiscoveredRingGroup.position.set(0, -0.05, 1.35); // In front of the front face of the machine
+  undiscoveredRingGroup.rotation.x = 0.32; // Perspective tilt towards camera matching screenshot 2
+  undiscoveredRingGroup.add(undiscoveredTextRing);
+  undiscoveredRingGroup.visible = false;
+
+  return undiscoveredRingGroup;
 }
 
 function updateUndiscoveredRingVisibility(targetModelId) {
-  if (!undiscoveredTextRing) {
+  if (!undiscoveredRingGroup) {
     createUndiscoveredTextRing();
   }
 
-  if (beanGroup && !beanGroup.children.includes(undiscoveredTextRing)) {
-    beanGroup.add(undiscoveredTextRing);
+  if (beanGroup && !beanGroup.children.includes(undiscoveredRingGroup)) {
+    beanGroup.add(undiscoveredRingGroup);
   }
 
   if (targetModelId === 'classic') {
-    undiscoveredTextRing.visible = true;
-    undiscoveredTextRing.material.opacity = 0;
-    gsap.to(undiscoveredTextRing.material, {
-      opacity: 0.95,
-      duration: 0.7,
-      ease: "power2.out"
-    });
+    undiscoveredRingGroup.visible = true;
+    if (undiscoveredTextRing) {
+      undiscoveredTextRing.material.opacity = 0;
+      gsap.to(undiscoveredTextRing.material, {
+        opacity: 0.96,
+        duration: 0.7,
+        ease: "power2.out"
+      });
+    }
   } else {
-    gsap.to(undiscoveredTextRing.material, {
-      opacity: 0,
-      duration: 0.35,
-      ease: "power2.in",
-      onComplete: () => {
-        if (currentModelId !== 'classic' && undiscoveredTextRing) {
-          undiscoveredTextRing.visible = false;
+    if (undiscoveredTextRing) {
+      gsap.to(undiscoveredTextRing.material, {
+        opacity: 0,
+        duration: 0.35,
+        ease: "power2.in",
+        onComplete: () => {
+          if (currentModelId !== 'classic' && undiscoveredRingGroup) {
+            undiscoveredRingGroup.visible = false;
+          }
         }
-      }
-    });
+      });
+    }
   }
 }
 
@@ -1108,76 +1121,9 @@ async function renderExtractionFeed() {
   try {
     if (currentModelId === 'classic') {
       if (countBadge) {
-        countBadge.textContent = 'DIAL-IN PENDING';
+        countBadge.textContent = '0 RECIPES';
       }
-      container.innerHTML = `
-        <article class="extracted-item-card is-active undiscovered-machine-card">
-          <div class="card-top-bar">
-            <div class="card-active-indicator" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">
-              <span class="active-pulse-dot" style="background: #fbbf24;"></span>
-              <span>DIAL-IN IN PROGRESS</span>
-            </div>
-            <span class="model-badge" style="background: rgba(255,255,255,0.08); font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.08em; color: var(--text-muted);">BREVILLE DUAL BOILER</span>
-          </div>
-          
-          <div class="undiscovered-card-body" style="text-align: center; padding: 22px 12px 18px 12px;">
-            <div class="undiscovered-lock-circle">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #fbbf24;">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-            </div>
-            <h3 class="undiscovered-card-title">COFFEE EXTRACTION UNDISCOVERED</h3>
-            <p class="undiscovered-card-desc">
-              Extraction parameters, grind micron calibration, and pressure profiling for the Breville Dual Boiler have not yet been discovered.
-            </p>
-          </div>
-
-          <div class="card-specs-grid" style="opacity: 0.45; filter: blur(0.4px); pointer-events: none; margin-bottom: 20px;">
-            <div class="spec-cell">
-              <span class="spec-label">GRIND SIZE</span>
-              <span class="spec-val">-- [LOCKED]</span>
-            </div>
-            <div class="spec-cell">
-              <span class="spec-label">GROUND DOSE</span>
-              <span class="spec-val">--.-g</span>
-            </div>
-            <div class="spec-cell">
-              <span class="spec-label">LIQUID YIELD</span>
-              <span class="spec-val">--.-g</span>
-            </div>
-            <div class="spec-cell">
-              <span class="spec-label">PULL TIME</span>
-              <span class="spec-val">--s</span>
-            </div>
-          </div>
-
-          <div style="text-align: center;">
-            <button class="action-pill-btn interactive-control" id="btn-seed-dual-boiler" style="width: 100%; justify-content: center; padding: 12px; font-weight: 600; font-size: 0.78rem;">
-              + Log First Dual Boiler Dial-in Record
-            </button>
-          </div>
-        </article>
-      `;
-      const seedBtn = document.getElementById('btn-seed-dual-boiler');
-      if (seedBtn) {
-        seedBtn.addEventListener('click', () => {
-          openLogModal({
-            roaster: 'Breville Dual Boiler Calibration',
-            beanName: 'Dial-in Calibration #1',
-            origin: 'First Extraction Test',
-            process: 'Washed',
-            roastLevel: 'Medium',
-            grindSize: 14,
-            dose: 19.0,
-            yield: 38.0,
-            time: 28,
-            rating: 4,
-            notes: ['Dial-in in Progress', 'First Calibration'],
-            additionalNotes: 'Initial dial-in calibration record for Breville Dual Boiler.'
-          });
-        });
-      }
+      container.innerHTML = '';
       return;
     }
 
@@ -1220,10 +1166,6 @@ async function renderExtractionFeed() {
 
       card.innerHTML = `
         <div class="card-top-bar">
-          <div class="card-active-indicator">
-            <span class="active-pulse-dot"></span>
-            <span>ACTIVE</span>
-          </div>
           <div class="card-action-btns">
             <button class="card-action-btn btn-edit-recipe interactive-control" title="Edit Recipe" aria-label="Edit Recipe">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -2095,20 +2037,22 @@ function setupInteractivity() {
     });
   }
 
-  // Sound Toggle Button
+  // Sound Toggle Button (if element present)
   const audioBtn = document.getElementById('audio-toggle-btn');
   const iconMuted = document.getElementById('audio-icon-muted');
   const iconActive = document.getElementById('audio-icon-active');
 
-  audioBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    initAudio();
-    audioEnabled = !audioEnabled;
-    iconMuted.style.display = audioEnabled ? 'none' : 'block';
-    iconActive.style.display = audioEnabled ? 'block' : 'none';
-    audioBtn.style.color = audioEnabled ? 'var(--gold-primary)' : 'var(--text-secondary)';
-    audioBtn.title = audioEnabled ? 'Sound Enabled (Mute)' : 'Sound Muted (Enable)';
-  });
+  if (audioBtn && iconMuted && iconActive) {
+    audioBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      initAudio();
+      audioEnabled = !audioEnabled;
+      iconMuted.style.display = audioEnabled ? 'none' : 'block';
+      iconActive.style.display = audioEnabled ? 'block' : 'none';
+      audioBtn.style.color = audioEnabled ? 'var(--gold-primary)' : 'var(--text-secondary)';
+      audioBtn.title = audioEnabled ? 'Sound Enabled (Mute)' : 'Sound Muted (Enable)';
+    });
+  }
 
   // Lighting Mode Toggle
   const lightBtn = document.getElementById('lighting-mode-btn');
@@ -2170,8 +2114,8 @@ function animate(time) {
   }
 
   // Continuous smooth 3D rotation for undiscovered text ribbon
-  if (undiscoveredTextRing && undiscoveredTextRing.visible) {
-    undiscoveredTextRing.rotation.y -= 0.0065;
+  if (undiscoveredTextRing && undiscoveredRingGroup && undiscoveredRingGroup.visible) {
+    undiscoveredTextRing.rotation.y -= 0.0075;
   }
 
   // Update HUD

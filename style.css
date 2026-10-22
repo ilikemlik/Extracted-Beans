@@ -192,60 +192,27 @@ a,
   margin-top: 2px;
 }
 
-/* Header Telemetry Pill */
+/* Header Action Controls (Top Right) */
 .header-telemetry {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.live-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 16px;
+  gap: 6px;
+  padding: 4px 6px;
   border-radius: var(--radius-full);
-  background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-subtle);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  letter-spacing: 0.08em;
-  font-weight: 500;
+  background: rgba(249, 248, 246, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-caramel);
+  box-shadow: 0 4px 16px rgba(100, 80, 65, 0.08);
 }
 
-.pulse-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background-color: var(--accent-caramel);
-  box-shadow: 0 0 8px var(--accent-caramel);
-  animation: pulseGlow 2.4s infinite ease-in-out;
-}
-
-@keyframes pulseGlow {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.35);
-    opacity: 1;
-    box-shadow: 0 0 12px var(--accent-caramel);
-  }
-}
-
-/* Sound and Options Buttons */
+/* Header Action Buttons */
 .icon-btn {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-full);
-  background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-subtle);
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
@@ -255,11 +222,15 @@ a,
 }
 
 .icon-btn:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--accent-caramel);
-  color: var(--text-primary);
+  background: #ffffff;
+  border-color: var(--border-caramel);
+  color: var(--accent-caramel-deep);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-medium);
+  box-shadow: 0 2px 8px rgba(100, 80, 65, 0.12);
+}
+
+.icon-btn:active {
+  transform: scale(0.96);
 }
 
 /* ==========================================================================
@@ -728,28 +699,6 @@ a,
   z-index: 2;
 }
 
-.card-active-indicator {
-  display: none;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--font-mono);
-  font-size: 0.60rem;
-  font-weight: 700;
-  color: #8C651A;
-  letter-spacing: 0.1em;
-}
-
-.extracted-item-card.is-active .card-active-indicator {
-  display: flex;
-}
-
-.active-pulse-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #8C651A;
-  animation: pulseAmber 1.8s infinite;
-}
 
 .card-action-btns {
   display: flex;
