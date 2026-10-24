@@ -4,119 +4,11 @@
    ========================================================================== */
 
 const DB_NAME = 'ExtractedBeansDB';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const STORE_NAME = 'extractions';
 
 // Default Seed Data: Curated Specialty Coffee Extractions with Breville 1-12 Dial settings
 export const DEFAULT_EXTRACTIONS = [
-  {
-    brandName: 'Onyx Coffee Lab',
-    roastEdition: 'Monarch Reserve Blend',
-    originRegion: 'Tolima & Huila, Colombia',
-    imageSrc: 'assets/brands/onyx.svg',
-    grindSize: '5',
-    grindDetail: 'Dial Setting 5 · Precision Conical',
-    grindAmount: '18.0 g',
-    doseDetail: 'Dry Ground Dose (18g in)',
-    extractedWeight: '36.0 g',
-    yieldDetail: 'Liquid Espresso Yield (1:2.0)',
-    brewTime: '27s',
-    brewTemp: '93.5°C',
-    ratio: '1:2.0',
-    notes: ['Dark Chocolate', 'Caramelized Sugar', 'Black Cherry'],
-    additionalNotes: 'Balanced sweet syrupy body, ideal for morning flat white or double shot.',
-    timestamp: Date.now() - 1400000
-  },
-  {
-    brandName: 'Sey Coffee',
-    roastEdition: 'El Paraiso Special Reserve',
-    originRegion: 'Cauca, Colombia · Thermal Shock',
-    imageSrc: 'assets/brands/sey.svg',
-    grindSize: '4',
-    grindDetail: 'Dial Setting 4 · Micro Burr',
-    grindAmount: '18.0 g',
-    doseDetail: 'High-Density Light Roast Dose',
-    extractedWeight: '38.0 g',
-    yieldDetail: 'High-Extraction Yield (1:2.11)',
-    brewTime: '30s',
-    brewTemp: '94.0°C',
-    ratio: '1:2.11',
-    notes: ['Red Currant', 'Bergamot', 'Jasmine Florals'],
-    additionalNotes: 'Extended 7s pre-infusion highlights bright bergamot acidity and crisp finish.',
-    timestamp: Date.now() - 1300000
-  },
-  {
-    brandName: 'Square Mile Coffee',
-    roastEdition: 'Red Brick Espresso Series',
-    originRegion: 'East Africa & Central America',
-    imageSrc: 'assets/brands/squaremile.svg',
-    grindSize: '6',
-    grindDetail: 'Dial Setting 6 · Flat Steel',
-    grindAmount: '18.5 g',
-    doseDetail: 'Classic Balanced Dose (18.5g in)',
-    extractedWeight: '37.0 g',
-    yieldDetail: 'Viscous Crema Yield (1:2.0)',
-    brewTime: '28s',
-    brewTemp: '93.0°C',
-    ratio: '1:2.0',
-    notes: ['Toffee Crisp', 'Milk Chocolate', 'Red Apple'],
-    additionalNotes: 'Velvety crema texture with pronounced milk chocolate undertones.',
-    timestamp: Date.now() - 1200000
-  },
-  {
-    brandName: 'Hacienda La Esmeralda',
-    roastEdition: 'Geisha Special Reserve',
-    originRegion: 'Boquete, Panama · 1,800m',
-    imageSrc: 'assets/brands/esmeralda.svg',
-    grindSize: '3',
-    grindDetail: 'Dial Setting 3 · Fine Dial',
-    grindAmount: '18.0 g',
-    doseDetail: 'Rare Varietal Geisha Dose',
-    extractedWeight: '40.0 g',
-    yieldDetail: 'High Clarity Nectar (1:2.22)',
-    brewTime: '32s',
-    brewTemp: '95.0°C',
-    ratio: '1:2.22',
-    notes: ['White Peach', 'Orange Blossom', 'Raw Honey'],
-    additionalNotes: 'High floral clarity. Recommended to drink black to preserve delicate honey notes.',
-    timestamp: Date.now() - 1100000
-  },
-  {
-    brandName: 'Blue Bottle Coffee',
-    roastEdition: 'Bella Donovan Blend',
-    originRegion: 'Ethiopia & Sumatra Blend',
-    imageSrc: 'assets/brands/bluebottle.svg',
-    grindSize: '7',
-    grindDetail: 'Dial Setting 7 · Conical Burr',
-    grindAmount: '19.0 g',
-    doseDetail: 'Mellow Rich Dose (19g in)',
-    extractedWeight: '38.0 g',
-    yieldDetail: 'Velvety Crema Yield (1:2.0)',
-    brewTime: '29s',
-    brewTemp: '92.5°C',
-    ratio: '1:2.0',
-    notes: ['Raspberry', 'Dark Chocolate', 'Molasses'],
-    additionalNotes: 'Deep, comforting finish with molasses richness.',
-    timestamp: Date.now() - 1000000
-  },
-  {
-    brandName: 'Tim Wendelboe',
-    roastEdition: 'Caballero Geisha Washed',
-    originRegion: 'Marcala, Honduras · 1,600m',
-    imageSrc: 'assets/brands/timwendelboe.svg',
-    grindSize: '4',
-    grindDetail: 'Dial Setting 4 · Nordic Precision',
-    grindAmount: '18.0 g',
-    doseDetail: 'Ultra-Dense High Altitude',
-    extractedWeight: '36.0 g',
-    yieldDetail: 'Crisp Phosphoric Yield (1:2.0)',
-    brewTime: '31s',
-    brewTemp: '94.5°C',
-    ratio: '1:2.0',
-    notes: ['Floral Jasmine', 'Apricot', 'Meyer Lemon'],
-    additionalNotes: 'Clean, tea-like mouthfeel with vibrant apricot finish.',
-    timestamp: Date.now() - 900000
-  },
   {
     brandName: 'Coffee.',
     roastEdition: 'Medium Roast · 100% Australian Roasted',
@@ -315,8 +207,26 @@ export function openDatabase() {
   });
 }
 
+// Legacy dummy coffee brands to purge from database
+const DUMMY_BRANDS = [
+  'tim wendelboe',
+  'tim wendleboe',
+  'blue bottle',
+  'hacienda la esmeralda',
+  'square mile',
+  'sey coffee',
+  'onyx coffee'
+];
+
+function isDummyBrand(brandName) {
+  if (!brandName) return false;
+  const name = brandName.trim().toLowerCase();
+  return DUMMY_BRANDS.some(dummy => name === dummy || name.startsWith(dummy) || name.includes(dummy));
+}
+
 /**
- * Seed database with default extractions if empty or sync missing default brands
+ * Seed database with default extractions if empty or sync missing default brands,
+ * and ensure legacy dummy coffee items are purged.
  */
 async function checkAndSeedDatabase(db) {
   const count = await getExtractionCount(db);
@@ -335,10 +245,21 @@ async function checkAndSeedDatabase(db) {
       const req = store.getAll();
       req.onsuccess = () => {
         const existing = req.result || [];
-        const existingKeys = new Set(existing.map(x => `${x.brandName}::${x.roastEdition}`));
+
+        // Purge dummy extraction items from the database
+        const activeExisting = [];
+        existing.forEach(record => {
+          if (isDummyBrand(record.brandName)) {
+            store.delete(record.id);
+          } else {
+            activeExisting.push(record);
+          }
+        });
+
+        const existingKeys = new Set(activeExisting.map(x => `${x.brandName}::${x.roastEdition}`));
 
         // Sync real extraction metrics onto existing "Coffee." entry if it still has old default metrics
-        existing.forEach(record => {
+        activeExisting.forEach(record => {
           if (record.brandName === 'Coffee.' && record.grindSize === '5' && record.grindAmount === '18.0 g') {
             const updatedCoffee = DEFAULT_EXTRACTIONS.find(d => d.brandName === 'Coffee.');
             if (updatedCoffee) {
