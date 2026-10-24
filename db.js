@@ -5,7 +5,35 @@
    2. Local Fallback Engine: IndexedDB browser storage (with persistent edits)
    ========================================================================== */
 
-import { firebaseConfig, isFirebaseConfigured, ADMIN_PASSCODE } from './firebase-config.js';
+// Base configuration & passcode fallbacks
+let firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+let ADMIN_PASSCODE = "1234";
+
+function isFirebaseConfigured() {
+  return Boolean(
+    firebaseConfig &&
+    firebaseConfig.apiKey &&
+    !firebaseConfig.apiKey.includes('YOUR_') &&
+    firebaseConfig.projectId &&
+    !firebaseConfig.projectId.includes('YOUR_')
+  );
+}
+
+// Dynamically load local gitignored firebase-config.js if present
+try {
+  const loadedConfig = await import('./firebase-config.js');
+  if (loadedConfig.firebaseConfig) firebaseConfig = loadedConfig.firebaseConfig;
+  if (loadedConfig.ADMIN_PASSCODE !== undefined) ADMIN_PASSCODE = loadedConfig.ADMIN_PASSCODE;
+} catch (_) {
+  // If firebase-config.js is absent, runs in local IndexedDB mode
+}
 
 const DB_NAME = 'ExtractedBeansDB';
 const DB_VERSION = 5;

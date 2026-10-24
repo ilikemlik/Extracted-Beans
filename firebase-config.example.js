@@ -1,5 +1,5 @@
 /* ==========================================================================
-   EXTRACTED BEANS - FIREBASE FIRESTORE CONFIGURATION
+   EXTRACTED BEANS - FIREBASE FIRESTORE CONFIGURATION (TEMPLATE)
    Central cloud database for real-time global synchronization across all users
    ========================================================================== */
 
@@ -7,13 +7,11 @@
  * FIREBASE PROJECT CONFIGURATION
  * 
  * To connect your live Firebase Firestore database:
- * 1. Go to https://console.firebase.google.com/
- * 2. Create a new Firebase project (e.g. "extracted-beans")
- * 3. Add a Web App (</>) and copy the `firebaseConfig` object below
- * 4. In Firebase Console, go to "Build" -> "Firestore Database" -> "Create database"
- * 5. Choose "Start in production mode" or "test mode"
- *    (For public read/write with passcode protection, test mode or open rules:
- *     allow read, write: if true;)
+ * 1. Copy this file to `firebase-config.js` (which is git-ignored to prevent leaking credentials/passcodes)
+ * 2. Go to https://console.firebase.google.com/
+ * 3. Create a new Firebase project (e.g. "extracted-beans")
+ * 4. Add a Web App (</>) and copy the `firebaseConfig` object below
+ * 5. In Firebase Console, go to "Build" -> "Firestore Database" -> "Create database"
  * 6. Replace the placeholder values below with your credentials.
  */
 export const firebaseConfig = {
@@ -22,7 +20,8 @@ export const firebaseConfig = {
   projectId: "YOUR_PROJECT_ID",
   storageBucket: "YOUR_PROJECT_ID.appspot.com",
   messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID"
 };
 
 /**
