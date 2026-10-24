@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="lavNavy" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1D3354"/>
+      <stop offset="100%" stop-color="#132238"/>
+    </linearGradient>
+    <linearGradient id="lavGold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D4BC8B"/>
+      <stop offset="50%" stop-color="#E8D5AC"/>
+      <stop offset="100%" stop-color="#C2A673"/>
+    </linearGradient>
+    <clipPath id="lavClip">
+      <rect width="320" height="320" rx="28"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#lavClip)">
+    <!-- Vibrant Italian Pop-Art Mosaic Background (Yellow, Terracotta, Teal, Cream) -->
+    <rect width="320" height="320" fill="#E5A913"/>
+    <!-- Geometric Art Blocks Top & Bottom -->
+    <rect x="0" y="0" width="95" height="90" fill="#0085AD"/>
+    <rect x="95" y="0" width="85" height="80" fill="#D13B27"/>
+    <rect x="180" y="0" width="75" height="85" fill="#E5A913"/>
+    <rect x="255" y="0" width="65" height="95" fill="#5A2828"/>
+    <!-- Roman Arch Windows Motif on Top Right -->
+    <g fill="#F4EFE6" transform="translate(190, 12)">
+      <rect x="0" y="0" width="52" height="44" rx="2"/>
+      <rect x="6" y="6" width="10" height="14" rx="5" fill="#D13B27"/>
+      <rect x="21" y="6" width="10" height="14" rx="5" fill="#D13B27"/>
+      <rect x="36" y="6" width="10" height="14" rx="5" fill="#D13B27"/>
+      <rect x="6" y="24" width="10" height="14" rx="5" fill="#0085AD"/>
+      <rect x="21" y="24" width="10" height="14" rx="5" fill="#0085AD"/>
+      <rect x="36" y="24" width="10" height="14" rx="5" fill="#0085AD"/>
+    </g>
+
+    <!-- Bottom Mosaic Blocks -->
+    <rect x="0" y="240" width="110" height="80" fill="#E5A913"/>
+    <rect x="110" y="240" width="90" height="80" fill="#D13B27"/>
+    <rect x="200" y="240" width="120" height="80" fill="#0085AD"/>
+    <circle cx="64" cy="285" r="22" fill="#5A2828"/>
+    <path d="M210,250 Q265,235 310,285 L320,320 L200,320 Z" fill="#F4EFE6"/>
+
+    <!-- Deep Navy Brushstroke Central Banner -->
+    <path d="M0,58 Q80,52 160,56 Q240,60 320,54 L320,258 Q240,264 160,258 Q80,254 0,260 Z" fill="url(#lavNavy)"/>
+
+    <!-- LAVAZZA Wordmark -->
+    <text x="160" y="106" text-anchor="middle" font-family="'Outfit', 'Arial Black', sans-serif" font-size="34" font-weight="900" fill="#E2E4E8" letter-spacing="3">LAVAZZA</text>
+    <text x="160" y="124" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="8.5" font-weight="700" fill="#CBD5E1" letter-spacing="2.8">TORINO, ITALIA, 1895</text>
+
+    <!-- Eternal ROMA -->
+    <text x="160" y="152" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="18" font-style="italic" fill="url(#lavGold)" letter-spacing="1.5">Eternal</text>
+    <text x="160" y="190" text-anchor="middle" font-family="'Outfit', serif" font-size="38" font-weight="700" fill="url(#lavGold)" letter-spacing="5">ROMA</text>
+
+    <!-- Tasting Notes & Intensity -->
+    <text x="160" y="214" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="9.5" font-weight="600" fill="#E2E8F0" letter-spacing="1.8">NOTES OF HAZELNUT &amp; DARK CHOCOLATE</text>
+    <text x="160" y="240" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="11" font-weight="700" fill="#FFFFFF" letter-spacing="2">INTENSITY <tspan font-size="17" font-weight="800" fill="#E8D5AC">8</tspan>/10</text>
+  </g>
+
+  <rect width="316" height="316" x="2" y="2" rx="26" fill="none" stroke="#E8D5AC" stroke-width="1.2" stroke-opacity="0.4"/>
+</svg>

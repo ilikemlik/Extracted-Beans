@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="rtRed" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#B92525"/>
+      <stop offset="100%" stop-color="#7F1616"/>
+    </linearGradient>
+    <linearGradient id="rtDark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E1B1A"/>
+      <stop offset="100%" stop-color="#0E0D0C"/>
+    </linearGradient>
+    <linearGradient id="rtGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E2BA78"/>
+      <stop offset="100%" stop-color="#B98A44"/>
+    </linearGradient>
+    <clipPath id="rtClip">
+      <rect width="320" height="320" rx="28"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#rtClip)">
+    <!-- Lower Dark Charcoal Bag Base -->
+    <rect width="320" height="320" fill="url(#rtDark)"/>
+
+    <!-- Upper Crimson Red Panel with Curved Gold Trim -->
+    <path d="M0,0 L320,0 L320,210 Q160,232 0,210 Z" fill="url(#rtRed)"/>
+    <path d="M0,210 Q160,232 320,210" fill="none" stroke="#8C1D1D" stroke-width="5"/>
+
+    <!-- Top Gold Foil Header Strip -->
+    <path d="M0,0 L320,0 L320,38 Q160,52 0,38 Z" fill="url(#rtGold)"/>
+
+    <!-- Robert Timms Gold Crest Shield -->
+    <g transform="translate(160, 56)">
+      <path d="M-54,-36 L54,-36 L54,8 Q54,42 0,46 Q-54,42 -54,8 Z" fill="url(#rtGold)" stroke="#F5EFE6" stroke-width="2.5"/>
+      <rect x="-50" y="-33" width="100" height="14" fill="#232220"/>
+      <text x="0" y="-23" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="7.5" font-weight="700" fill="#F5EFE6" letter-spacing="1.5">THE HOUSE OF</text>
+      <text x="0" y="2" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#232220">Robert</text>
+      <text x="0" y="24" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#232220">Timms</text>
+    </g>
+
+    <!-- EST. 1951 -->
+    <text x="160" y="118" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="10" font-weight="700" fill="#E8CFB1" letter-spacing="2.5">EST. 1951</text>
+
+    <!-- CAFÉ SERIES Wordmark -->
+    <text x="160" y="156" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="38" font-weight="900" fill="#F4F3EF" letter-spacing="4">CAFÉ</text>
+    <text x="160" y="186" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="26" font-weight="800" fill="#F4F3EF" letter-spacing="5">SERIES</text>
+    <text x="160" y="204" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="8.5" font-weight="500" fill="#F4F3EF" opacity="0.9" letter-spacing="0.8">Freshly roasted premium whole coffee beans</text>
+
+    <!-- Bottom Dark Panel: MEDIUM ROAST / HAND-CRAFTED BLEND -->
+    <text x="160" y="256" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="25" font-weight="800" fill="#E5E7EB" letter-spacing="3.5">MEDIUM</text>
+    <text x="160" y="280" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="22" font-weight="800" fill="#E5E7EB" letter-spacing="4">ROAST</text>
+    <text x="160" y="300" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="9" font-weight="700" fill="#D4A359" letter-spacing="2.2">HAND-CRAFTED BLEND</text>
+  </g>
+
+  <rect width="316" height="316" x="2" y="2" rx="26" fill="none" stroke="#E2BA78" stroke-width="1.2" stroke-opacity="0.35"/>
+</svg>

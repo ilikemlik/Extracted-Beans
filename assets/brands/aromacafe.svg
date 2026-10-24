@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="aromaBag" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F2F1EC"/>
+      <stop offset="60%" stop-color="#E5E4DE"/>
+      <stop offset="100%" stop-color="#D5D4CE"/>
+    </linearGradient>
+    <linearGradient id="aromaRed" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C81E2B"/>
+      <stop offset="100%" stop-color="#A61621"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Matte Off-White Bag Background -->
+  <rect width="320" height="320" rx="28" fill="url(#aromaBag)"/>
+  <rect width="314" height="314" x="3" y="3" rx="25" fill="none" stroke="#222326" stroke-width="1.2" stroke-opacity="0.18"/>
+
+  <!-- Botanical Coffee Cherry & Leaf Engraving Illustration (Top Arch) -->
+  <g transform="translate(160, 72)" stroke="#232428" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Stem -->
+    <path d="M-38,-28 Q-8,-22 12,-14" stroke-width="2.5"/>
+    <!-- Left Half-Cherry -->
+    <path d="M-54,-22 A16,14 0 0,0 -24,-24" stroke-width="2.2" fill="#232428" fill-opacity="0.12"/>
+    <!-- Central Coffee Cherry / Berry -->
+    <ellipse cx="-14" cy="-2" rx="14" ry="16" transform="rotate(18 -14 -2)" stroke-width="2.2" fill="#232428" fill-opacity="0.08"/>
+    <path d="M-22,-10 Q-14,-2 -18,12" stroke-width="1.6"/>
+    <path d="M-16,-14 Q-8,-2 -12,10" stroke-width="1.4"/>
+    <line x1="-19" y1="14" x2="-22" y2="20" stroke-width="2"/>
+    <!-- Botanical Coffee Leaf -->
+    <path d="M4,-18 C28,-16 52,6 56,38 C30,26 10,8 4,-18 Z" stroke-width="2.2" fill="#232428" fill-opacity="0.14"/>
+    <!-- Leaf Vein & Hatching -->
+    <path d="M4,-18 C24,2 40,18 56,38" stroke-width="1.8"/>
+    <line x1="16" y1="-4" x2="26" y2="-6" stroke-width="1.2"/>
+    <line x1="24" y1="5" x2="38" y2="2" stroke-width="1.2"/>
+    <line x1="33" y1="14" x2="46" y2="11" stroke-width="1.2"/>
+    <line x1="18" y1="4" x2="14" y2="12" stroke-width="1.2"/>
+    <line x1="28" y1="14" x2="24" y2="22" stroke-width="1.2"/>
+  </g>
+
+  <!-- Main Typography: SEASONAL ESPRESSO -->
+  <text x="34" y="156" text-anchor="start" font-family="'Outfit', 'Inter', sans-serif" font-size="34" font-weight="800" fill="#18191C" letter-spacing="1.5">SEASONAL</text>
+  <text x="34" y="192" text-anchor="start" font-family="'Outfit', 'Inter', sans-serif" font-size="34" font-weight="800" fill="#18191C" letter-spacing="1.5">ESPRESSO</text>
+
+  <!-- Subtitle: BY AROMA CAFÉ -->
+  <text x="34" y="218" text-anchor="start" font-family="'Outfit', 'Inter', sans-serif" font-size="18.5" font-weight="700" fill="url(#aromaRed)" letter-spacing="1.2">BY AROMA CAFÉ</text>
+
+  <!-- Tasting Description Block -->
+  <text x="34" y="250" text-anchor="start" font-family="'Space Grotesk', sans-serif" font-size="9.5" font-weight="600" fill="#222326" letter-spacing="0.6">THICK AND VELVETY BODY WITH A</text>
+  <text x="34" y="264" text-anchor="start" font-family="'Space Grotesk', sans-serif" font-size="9.5" font-weight="600" fill="#222326" letter-spacing="0.6">SWEET CHOCOLATE FLAVOUR AND</text>
+  <text x="34" y="278" text-anchor="start" font-family="'Space Grotesk', sans-serif" font-size="9.5" font-weight="600" fill="#222326" letter-spacing="0.6">DISTINCTIVE FRUIT AFTERTASTE</text>
+
+  <!-- 100% ARABICA Footer -->
+  <text x="34" y="295" text-anchor="start" font-family="'Space Grotesk', sans-serif" font-size="10" font-weight="800" fill="url(#aromaRed)" letter-spacing="1.2">100% ARABICA</text>
+</svg>

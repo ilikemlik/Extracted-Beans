@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="gcCream" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#F2F2EE"/>
+      <stop offset="100%" stop-color="#E2E2DC"/>
+    </linearGradient>
+    <linearGradient id="gcCaramel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#BC8253"/>
+      <stop offset="100%" stop-color="#9E6538"/>
+    </linearGradient>
+    <clipPath id="gcClip">
+      <rect width="320" height="320" rx="28"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#gcClip)">
+    <!-- Upper Alabaster-Cream Bag Background -->
+    <rect width="320" height="320" fill="url(#gcCream)"/>
+
+    <!-- Top Brand Header: GRINDERS COFFEE ROASTERS -->
+    <text x="160" y="66" text-anchor="middle" font-family="'Outfit', serif" font-size="31" font-weight="800" fill="#2A2B2E" letter-spacing="3.5">GRINDERS</text>
+    <text x="160" y="88" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="11" font-weight="600" fill="#3F4146" letter-spacing="3.8">COFFEE ROASTERS</text>
+
+    <!-- CREMA Title -->
+    <text x="160" y="152" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="34" font-weight="700" fill="#B57438" letter-spacing="4.5">CREMA</text>
+
+    <!-- Lower Caramel-Tan Specification Band -->
+    <rect x="0" y="184" width="320" height="136" fill="url(#gcCaramel)"/>
+    <!-- Grid Lines -->
+    <line x1="0" y1="184" x2="320" y2="184" stroke="#7A4B24" stroke-width="1.2"/>
+    <line x1="0" y1="226" x2="216" y2="226" stroke="#7A4B24" stroke-width="1"/>
+    <line x1="0" y1="264" x2="216" y2="264" stroke="#7A4B24" stroke-width="1"/>
+    <line x1="216" y1="184" x2="216" y2="320" stroke="#7A4B24" stroke-width="1"/>
+
+    <!-- Row 1: SMOOTH & CREAMY -->
+    <text x="108" y="210" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="15.5" font-weight="700" fill="#F4F3EF" letter-spacing="2.2">SMOOTH &amp; CREAMY</text>
+
+    <!-- Row 2: MEDIUM ROAST 3/5 Dots -->
+    <text x="22" y="249" text-anchor="start" font-family="'Space Grotesk', sans-serif" font-size="9.5" font-weight="700" fill="#F4F3EF" letter-spacing="1.5">MEDIUM ROAST</text>
+    <g transform="translate(132, 245)">
+      <circle cx="0" cy="0" r="4.5" fill="#F4F3EF"/>
+      <circle cx="13" cy="0" r="4.5" fill="#F4F3EF"/>
+      <circle cx="26" cy="0" r="4.5" fill="#F4F3EF"/>
+      <circle cx="39" cy="0" r="4" fill="none" stroke="#F4F3EF" stroke-width="1.5"/>
+      <circle cx="52" cy="0" r="4" fill="none" stroke="#F4F3EF" stroke-width="1.5"/>
+    </g>
+
+    <!-- Row 3: TASTES LIKE: Cocoa & Honey -->
+    <text x="22" y="284" text-anchor="start" font-family="'Space Grotesk', sans-serif" font-size="9" font-weight="700" fill="#F4F3EF" letter-spacing="1">TASTES LIKE:</text>
+    <text x="22" y="299" text-anchor="start" font-family="'Space Grotesk', sans-serif" font-size="10.5" font-weight="600" fill="#F4F3EF">Cocoa &amp; Honey</text>
+
+    <!-- Right Column: Roaster Wheel Emblem + 1kg -->
+    <g transform="translate(268, 228)">
+      <circle cx="0" cy="0" r="18" fill="none" stroke="#F4F3EF" stroke-width="1.4"/>
+      <circle cx="0" cy="0" r="12" fill="none" stroke="#F4F3EF" stroke-width="1"/>
+      <line x1="-18" y1="0" x2="18" y2="0" stroke="#F4F3EF" stroke-width="1"/>
+      <line x1="0" y1="-18" x2="0" y2="18" stroke="#F4F3EF" stroke-width="1"/>
+      <text x="0" y="34" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="10.5" font-weight="800" fill="#F4F3EF" letter-spacing="1">GRINDERS</text>
+      <text x="0" y="45" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="6.5" font-weight="600" fill="#F4F3EF" letter-spacing="0.8">COFFEE ROASTERS</text>
+      <text x="0" y="68" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="11" font-weight="700" fill="#F4F3EF">1 kg e</text>
+    </g>
+  </g>
+
+  <rect width="316" height="316" x="2" y="2" rx="26" fill="none" stroke="#9E6538" stroke-width="1.2" stroke-opacity="0.35"/>
+</svg>

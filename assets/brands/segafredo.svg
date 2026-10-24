@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="segRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E02B2B"/>
+      <stop offset="55%" stop-color="#C81E1E"/>
+      <stop offset="100%" stop-color="#9E1414"/>
+    </linearGradient>
+    <linearGradient id="segGold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#DFC496"/>
+      <stop offset="50%" stop-color="#EAD4AC"/>
+      <stop offset="100%" stop-color="#CDAE78"/>
+    </linearGradient>
+    <clipPath id="segClip">
+      <rect width="320" height="320" rx="28"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#segClip)">
+    <!-- Crimson Red Background -->
+    <rect width="320" height="320" fill="url(#segRed)"/>
+
+    <!-- Champagne-Gold Curved Top Header Panel -->
+    <path d="M0,0 L320,0 L320,76 Q160,96 0,76 Z" fill="url(#segGold)"/>
+
+    <!-- Segafredo ZANETTI Header Logo -->
+    <text x="160" y="42" text-anchor="middle" font-family="'Outfit', 'Arial Black', sans-serif" font-size="25" font-weight="900" font-style="italic" fill="#1F1F22" letter-spacing="0.5">Segafredo</text>
+    <line x1="42" y1="58" x2="102" y2="58" stroke="#1F1F22" stroke-width="1.5"/>
+    <text x="160" y="62" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="11.5" font-weight="700" fill="#1F1F22" letter-spacing="4.5">ZANETTI</text>
+    <line x1="218" y1="58" x2="278" y2="58" stroke="#1F1F22" stroke-width="1.5"/>
+
+    <!-- EMOZIONI Title -->
+    <text x="160" y="128" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="31" font-weight="600" fill="#EAD4AC" letter-spacing="6.5">EMOZIONI</text>
+
+    <!-- 100% ARABICA -->
+    <text x="160" y="152" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="11.5" font-weight="600" fill="#FFFFFF" letter-spacing="3.5">100% ARABICA</text>
+
+    <!-- STRENGTH: 3/5 Dots -->
+    <g transform="translate(160, 174)">
+      <text x="-28" y="4" text-anchor="end" font-family="'Space Grotesk', sans-serif" font-size="10.5" font-weight="700" fill="#2B1818" letter-spacing="1.2">STRENGTH:</text>
+      <circle cx="-12" cy="0" r="5" fill="#2B1818"/>
+      <circle cx="4" cy="0" r="5" fill="#2B1818"/>
+      <circle cx="20" cy="0" r="5" fill="#2B1818"/>
+      <circle cx="36" cy="0" r="4.5" fill="none" stroke="#2B1818" stroke-width="1.5"/>
+      <circle cx="52" cy="0" r="4.5" fill="none" stroke="#2B1818" stroke-width="1.5"/>
+    </g>
+
+    <!-- Three Roasted Coffee Beans Illustration -->
+    <g transform="translate(160, 224)">
+      <!-- Left Bean -->
+      <g transform="translate(-22, -6) rotate(-25)">
+        <ellipse cx="0" cy="0" rx="18" ry="24" fill="#5A2D18" stroke="#2E150A" stroke-width="1.5"/>
+        <path d="M-2,-22 Q4,0 -2,22" fill="none" stroke="#230E05" stroke-width="3.5" stroke-linecap="round"/>
+      </g>
+      <!-- Right Bottom Bean -->
+      <g transform="translate(8, 12) rotate(48)">
+        <ellipse cx="0" cy="0" rx="15" ry="22" fill="#4A2311" stroke="#2E150A" stroke-width="1.5"/>
+        <path d="M-1,-20 Q3,0 -1,20" fill="none" stroke="#230E05" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <!-- Top Right Side Bean -->
+      <g transform="translate(24, -16) rotate(-32)">
+        <ellipse cx="0" cy="0" rx="11" ry="18" fill="#63321B" stroke="#2E150A" stroke-width="1.5"/>
+        <path d="M2,-16 Q-3,0 2,16" fill="none" stroke="#230E05" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+    </g>
+
+    <!-- ROASTED COFFEE BEANS / 700g -->
+    <text x="160" y="280" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="10.5" font-weight="500" fill="#FFFFFF" letter-spacing="2.2">ROASTED COFFEE BEANS</text>
+    <text x="160" y="302" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="16" font-weight="600" fill="#FFFFFF" letter-spacing="1">700g</text>
+  </g>
+
+  <rect width="316" height="316" x="2" y="2" rx="26" fill="none" stroke="#EAD4AC" stroke-width="1.2" stroke-opacity="0.35"/>
+</svg>
