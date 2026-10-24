@@ -165,7 +165,11 @@
           <div class="list-panel-header">
             <div class="list-header-title-row">
               <div class="list-title-group">
-                <span class="db-counter-badge" id="db-counter-badge">9 RECIPES</span>
+                <span class="db-counter-badge" id="db-counter-badge">15 RECIPES</span>
+                <div class="storage-status-pill is-local" id="storage-status-pill" title="Database Sync Engine">
+                  <span class="status-pulse-dot" id="status-pulse-dot"></span>
+                  <span class="storage-status-text" id="storage-status-text">LOCAL DB</span>
+                </div>
               </div>
               <div class="list-header-actions">
                 <button class="action-pill-btn interactive-control" id="btn-open-log-modal" title="Log a new coffee extraction to database">
@@ -174,6 +178,12 @@
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                   </svg>
                   <span>Log Recipe</span>
+                </button>
+                <button class="action-icon-btn interactive-control" id="btn-reset-defaults" title="Reset recipes to default curated list" aria-label="Reset recipes to defaults">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <path d="M3 3v5h5"></path>
+                  </svg>
                 </button>
                 <button class="extracted-close-btn interactive-control" id="btn-close-extracted-list" title="Return to 3D Inspection" aria-label="Close extracted list">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -291,6 +301,36 @@
             <button type="button" class="btn-cancel interactive-control" id="btn-cancel-modal">Cancel</button>
             <button type="submit" class="btn-submit interactive-control" id="btn-save-extraction">
               <span id="btn-save-text">Save to Database</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Security Passcode for Recipe Management (Edit/Delete) -->
+    <div class="modal-backdrop" id="modal-passcode" aria-hidden="true" role="dialog" aria-labelledby="modal-passcode-title">
+      <div class="modal-card passcode-modal-card">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span class="modal-tag">SECURITY VERIFICATION</span>
+            <h2 class="modal-title" id="modal-passcode-title">Admin Passcode</h2>
+          </div>
+          <button class="modal-close-btn interactive-control" id="btn-close-passcode-modal" aria-label="Close passcode modal">✕</button>
+        </div>
+
+        <p class="modal-subtext">Enter management passcode to edit or delete coffee recipes. Once verified, actions remain unlocked for this browser session.</p>
+
+        <form id="form-passcode" class="modal-form">
+          <div class="form-group">
+            <label for="input-passcode">Management Passcode</label>
+            <input type="password" id="input-passcode" placeholder="Enter PIN (Default: 1234)" autocomplete="current-password" required>
+            <span class="passcode-error-msg" id="passcode-error-msg"></span>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel interactive-control" id="btn-cancel-passcode">Cancel</button>
+            <button type="submit" class="btn-submit interactive-control" id="btn-submit-passcode">
+              <span>Unlock Session</span>
             </button>
           </div>
         </form>

@@ -3,7 +3,18 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { gsap } from 'gsap';
-import { getAllExtractions, addExtractionRecord, updateExtractionRecord, deleteExtractionRecord, getExtractionCount } from './db.js';
+import { 
+  getAllExtractions, 
+  addExtractionRecord, 
+  updateExtractionRecord, 
+  deleteExtractionRecord, 
+  getExtractionCount,
+  subscribeToExtractions,
+  resetDatabaseToDefaults,
+  isPasscodeUnlocked,
+  verifyPasscode,
+  getStorageMode
+} from './db.js';
 
 /* ==========================================================================
    EXTRACTED BEANS - 3D INTERACTIVE EXPERIENCE
@@ -1168,18 +1179,76 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+
+/* ==========================================================================
+   PASSCODE PROTECTION & CLOUD STORAGE STATUS HELPERS
+   ========================================================================== */
+let pendingPasscodeAction = null;
+
+function requirePasscode(onAuthorized) {
+  if (isPasscodeUnlocked()) {
+    onAuthorized();
+    return;
+  }
+  pendingPasscodeAction = onAuthorized;
+  openPasscodeModal();
+}
+
+function openPasscodeModal() {
+  const modal = document.getElementById('modal-passcode');
+  const input = document.getElementById('input-passcode');
+  const errorMsg = document.getElementById('passcode-error-msg');
+  if (errorMsg) errorMsg.textContent = '';
+  if (input) {
+    input.value = '';
+    input.classList.remove('shake-input');
+  }
+  if (modal) {
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+    setTimeout(() => { if (input) input.focus(); }, 100);
+  }
+}
+
+function closePasscodeModal() {
+  const modal = document.getElementById('modal-passcode');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  pendingPasscodeAction = null;
+}
+
+function updateStorageStatusIndicator(mode) {
+  const pill = document.getElementById('storage-status-pill');
+  const text = document.getElementById('storage-status-text');
+  if (!pill || !text) return;
+
+  if (mode === 'firebase') {
+    pill.className = 'storage-status-pill is-cloud';
+    pill.title = 'Connected to Cloud Firestore (Real-Time Multi-User Sync)';
+    text.textContent = 'CLOUD LIVE';
+  } else {
+    pill.className = 'storage-status-pill is-local';
+    pill.title = 'Running on Local IndexedDB (Configure firebase-config.js for Cloud Sync)';
+    text.textContent = 'LOCAL DB';
+  }
+}
+
 /* ==========================================================================
    2D Extracted Coffee Cards Feed (IndexedDB Powered)
    - Queries IndexedDB database for coffee extractions
    - Dynamically renders interactive 2D cards with Breville 1-12 grind & specs
    - Supports inline Edit and Delete operations with IndexedDB synchronization
    ========================================================================== */
-async function renderExtractionFeed() {
+async function renderExtractionFeed(recordsOverride = null) {
   const container = document.getElementById('extracted-cards-container');
   const countBadge = document.getElementById('db-counter-badge');
   if (!container) return;
 
   try {
+    updateStorageStatusIndicator(getStorageMode());
+
     if (currentModelId === 'classic') {
       if (countBadge) {
         countBadge.textContent = '0 RECIPES';
@@ -1188,7 +1257,7 @@ async function renderExtractionFeed() {
       return;
     }
 
-    const extractions = await getAllExtractions();
+    const extractions = Array.isArray(recordsOverride) ? recordsOverride : await getAllExtractions();
 
     if (countBadge) {
       countBadge.textContent = `${extractions.length} RECIPES`;
@@ -1297,28 +1366,32 @@ async function renderExtractionFeed() {
         activeExtractionId = item.id;
       });
 
-      // Edit Button Click
+      // Edit Button Click (Passcode Protected)
       const btnEdit = card.querySelector('.btn-edit-recipe');
       if (btnEdit) {
         btnEdit.addEventListener('click', (e) => {
           e.stopPropagation();
-          openLogModal(item);
+          requirePasscode(() => {
+            openLogModal(item);
+          });
         });
       }
 
-      // Delete Button Click
+      // Delete Button Click (Passcode Protected)
       const btnDelete = card.querySelector('.btn-delete-recipe');
       if (btnDelete) {
-        btnDelete.addEventListener('click', async (e) => {
+        btnDelete.addEventListener('click', (e) => {
           e.stopPropagation();
-          const confirmed = window.confirm(`Delete recipe for "${item.brandName} - ${item.roastEdition}"?`);
-          if (confirmed) {
-            await deleteExtractionRecord(item.id);
-            if (activeExtractionId === item.id) {
-              activeExtractionId = null;
+          requirePasscode(async () => {
+            const confirmed = window.confirm(`Delete recipe for "${item.brandName} - ${item.roastEdition}"?`);
+            if (confirmed) {
+              await deleteExtractionRecord(item.id);
+              if (activeExtractionId === item.id) {
+                activeExtractionId = null;
+              }
+              await renderExtractionFeed();
             }
-            await renderExtractionFeed();
-          }
+          });
         });
       }
 
@@ -2057,15 +2130,15 @@ function setupInteractivity() {
 
       try {
         if (editId) {
-          const numericId = Number(editId);
+          const recordId = isNaN(Number(editId)) ? editId : Number(editId);
           // Preserve existing imageSrc if available
           const existingList = await getAllExtractions();
-          const existingRecord = existingList.find(x => x.id === numericId);
+          const existingRecord = existingList.find(x => String(x.id) === String(recordId));
           if (existingRecord && existingRecord.imageSrc) {
             recordData.imageSrc = existingRecord.imageSrc;
           }
-          await updateExtractionRecord({ id: numericId, ...recordData });
-          activeExtractionId = numericId;
+          await updateExtractionRecord({ id: recordId, ...recordData });
+          activeExtractionId = recordId;
         } else {
           const newId = await addExtractionRecord(recordData);
           activeExtractionId = newId;
@@ -2107,8 +2180,11 @@ function setupInteractivity() {
       toggleExtractedView();
     }
     if (e.key === 'Escape') {
+      const passcodeModal = document.getElementById('modal-passcode');
       const modal = document.getElementById('modal-log-extraction');
-      if (modal && modal.classList.contains('active')) {
+      if (passcodeModal && passcodeModal.classList.contains('active')) {
+        closePasscodeModal();
+      } else if (modal && modal.classList.contains('active')) {
         closeLogModal();
       } else if (isExtractedView) {
         toggleExtractedView(false);
@@ -2201,8 +2277,63 @@ function setupInteractivity() {
   // Window Resize
   window.addEventListener('resize', onWindowResize);
 
-  // Initialize extracted cards feed with all recipes from IndexedDB
-  renderExtractionFeed('all');
+  // Security Passcode Form Submission
+  const formPasscode = document.getElementById('form-passcode');
+  if (formPasscode) {
+    formPasscode.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('input-passcode');
+      const errorMsg = document.getElementById('passcode-error-msg');
+      const pin = input?.value || '';
+
+      if (verifyPasscode(pin)) {
+        closePasscodeModal();
+        if (typeof pendingPasscodeAction === 'function') {
+          const action = pendingPasscodeAction;
+          pendingPasscodeAction = null;
+          action();
+        }
+      } else {
+        if (errorMsg) errorMsg.textContent = 'Incorrect passcode. Please try again.';
+        if (input) {
+          input.classList.add('shake-input');
+          setTimeout(() => input.classList.remove('shake-input'), 500);
+          input.focus();
+        }
+      }
+    });
+  }
+
+  const btnCancelPasscode = document.getElementById('btn-cancel-passcode');
+  if (btnCancelPasscode) {
+    btnCancelPasscode.addEventListener('click', closePasscodeModal);
+  }
+
+  const btnClosePasscodeModal = document.getElementById('btn-close-passcode-modal');
+  if (btnClosePasscodeModal) {
+    btnClosePasscodeModal.addEventListener('click', closePasscodeModal);
+  }
+
+  // Reset to Defaults Button
+  const btnResetDefaults = document.getElementById('btn-reset-defaults');
+  if (btnResetDefaults) {
+    btnResetDefaults.addEventListener('click', () => {
+      requirePasscode(async () => {
+        const confirmed = window.confirm('Reset all recipes to default curated profiles? This will restore original recipes.');
+        if (confirmed) {
+          await resetDatabaseToDefaults();
+          activeExtractionId = null;
+          await renderExtractionFeed();
+        }
+      });
+    });
+  }
+
+  // Initialize real-time extraction subscription (Cloud Firestore or local IndexedDB fallback)
+  subscribeToExtractions((records, mode) => {
+    updateStorageStatusIndicator(mode);
+    renderExtractionFeed(records);
+  });
 }
 
 function onWindowResize() {
