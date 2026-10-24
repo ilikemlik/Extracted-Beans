@@ -1219,10 +1219,16 @@ function closePasscodeModal() {
   pendingPasscodeAction = null;
 }
 
-function updateStorageStatusIndicator(mode) {
+function updateStorageStatusIndicator(mode = getStorageMode()) {
   const pill = document.getElementById('storage-status-pill');
   const text = document.getElementById('storage-status-text');
   if (!pill || !text) return;
+
+  if (!isPasscodeUnlocked()) {
+    pill.style.display = 'none';
+    return;
+  }
+  pill.style.display = 'inline-flex';
 
   if (mode === 'firebase') {
     pill.className = 'storage-status-pill is-cloud';
@@ -2288,6 +2294,7 @@ function setupInteractivity() {
 
       if (verifyPasscode(pin)) {
         closePasscodeModal();
+        updateStorageStatusIndicator(getStorageMode());
         if (typeof pendingPasscodeAction === 'function') {
           const action = pendingPasscodeAction;
           pendingPasscodeAction = null;

@@ -307,6 +307,13 @@ export function initDatabase() {
         const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
         firestoreDb = getFirestore(app);
         isCloudActive = true;
+
+        if (firebaseConfig.measurementId) {
+          import('https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js')
+            .then(({ getAnalytics, isSupported }) => isSupported().then(yes => yes && getAnalytics(app)))
+            .catch(() => {});
+        }
+
         await checkAndSeedFirestore(firestoreDb);
         return { mode: 'firebase', db: firestoreDb };
       } catch (err) {
